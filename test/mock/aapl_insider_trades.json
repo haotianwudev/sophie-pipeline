@@ -1,0 +1,62 @@
+[
+  {
+    "ticker": "AAPL",
+    "issuer": "Apple Inc.",
+    "name": "Timothy D. Cook",
+    "title": "Chief Executive Officer",
+    "is_board_director": true,
+    "transaction_date": "2025-04-15",
+    "transaction_shares": 25000.0,
+    "transaction_price_per_share": 180.75,
+    "transaction_value": 4518750.0,
+    "shares_owned_before_transaction": 3800000.0,
+    "shares_owned_after_transaction": 3775000.0,
+    "security_title": "Common Stock",
+    "filing_date": "2025-04-16"
+  },
+  {
+    "ticker": "AAPL",
+    "issuer": "Apple Inc.",
+    "name": "Luca Maestri",
+    "title": "Chief Financial Officer",
+    "is_board_director": false,
+    "transaction_date": "2025-04-08",
+    "transaction_shares": 18500.0,
+    "transaction_price_per_share": 179.43,
+    "transaction_value": 3319455.0,
+    "shares_owned_before_transaction": 110000.0,
+    "shares_owned_after_transaction": 91500.0,
+    "security_title": "Common Stock",
+    "filing_date": "2025-04-10"
+  },
+  {
+    "ticker": "AAPL",
+    "issuer": "Apple Inc.",
+    "name": "Katherine L. Adams",
+    "title": "General Counsel",
+    "is_board_director": false,
+    "transaction_date": "2025-03-31",
+    "transaction_shares": 12000.0,
+    "transaction_price_per_share": 177.85,
+    "transaction_value": 2134200.0,
+    "shares_owned_before_transaction": 75000.0,
+    "shares_owned_after_transaction": 63000.0,
+    "security_title": "Common Stock",
+    "filing_date": "2025-04-02"
+  },
+  {
+    "ticker": "AAPL",
+    "issuer": "Apple Inc.",
+    "name": "Jeffrey Williams",
+    "title": "Chief Operating Officer",
+    "is_board_director": false,
+    "transaction_date": "2025-03-16",
+    "transaction_shares": 20000.0,
+    "transaction_price_per_share": 175.22,
+    "transaction_value": 3504400.0,
+    "shares_owned_before_transaction": 135000.0,
+    "shares_owned_after_transaction": 115000.0,
+    "security_title": "Common Stock",
+    "filing_date": "2025-03-18"
+  }
+]

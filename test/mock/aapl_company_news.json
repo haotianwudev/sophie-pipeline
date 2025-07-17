@@ -1,0 +1,47 @@
+[
+  {
+    "ticker": "AAPL",
+    "title": "Apple Reports Record Q2 Earnings, Announces $90B Share Repurchase Program",
+    "author": "John Smith",
+    "source": "Financial Times",
+    "date": "2025-04-28",
+    "url": "https://example.com/apple-earnings-q2",
+    "sentiment": "positive"
+  },
+  {
+    "ticker": "AAPL",
+    "title": "Apple Unveils New MacBook Pro with Next-Generation M3 Chip",
+    "author": "Sarah Johnson",
+    "source": "Tech Crunch",
+    "date": "2025-04-26",
+    "url": "https://example.com/apple-new-macbook-m3",
+    "sentiment": "positive"
+  },
+  {
+    "ticker": "AAPL",
+    "title": "Apple's App Store Faces New Regulatory Challenges in EU",
+    "author": "Michael Brown",
+    "source": "Wall Street Journal",
+    "date": "2025-04-25",
+    "url": "https://example.com/apple-regulatory-eu",
+    "sentiment": "negative"
+  },
+  {
+    "ticker": "AAPL",
+    "title": "Apple Expands Manufacturing in India Amid Supply Chain Diversification",
+    "author": "Priya Patel",
+    "source": "Bloomberg",
+    "date": "2025-04-24",
+    "url": "https://example.com/apple-manufacturing-india",
+    "sentiment": "neutral"
+  },
+  {
+    "ticker": "AAPL",
+    "title": "Apple's AR/VR Headset Launch Date Pushed to Late 2025",
+    "author": "David Lee",
+    "source": "The Information",
+    "date": "2025-04-23",
+    "url": "https://example.com/apple-ar-vr-delay",
+    "sentiment": "negative"
+  }
+]

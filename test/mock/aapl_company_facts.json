@@ -1,0 +1,20 @@
+{
+  "ticker": "AAPL",
+  "name": "Apple Inc.",
+  "cik": "0000320193",
+  "industry": "Technology Hardware",
+  "sector": "Information Technology",
+  "category": "Electronic Technology",
+  "exchange": "NASDAQ",
+  "is_active": true,
+  "listing_date": "1980-12-12",
+  "location": "Cupertino, California, United States",
+  "market_cap": 2918000000000.0,
+  "number_of_employees": 164000,
+  "sec_filings_url": "https://www.sec.gov/cgi-bin/browse-edgar?CIK=0000320193",
+  "sic_code": "3571",
+  "sic_industry": "Electronic Computers",
+  "sic_sector": "Manufacturing",
+  "website_url": "https://www.apple.com",
+  "weighted_average_shares": 15520000000
+} 
