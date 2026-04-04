@@ -3,14 +3,19 @@ import sys
 import logging
 from datetime import datetime
 import os
+from pathlib import Path
+
+# Always write logs to <repo_root>/logs/ regardless of working directory
+REPO_ROOT = Path(__file__).parent.parent
+LOGS_DIR = REPO_ROOT / "logs"
 
 def setup_logging(tickers):
     """Configure logging to file and console with timestamped filename"""
-    os.makedirs('logs', exist_ok=True)
-    
+    LOGS_DIR.mkdir(exist_ok=True)
+
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
     tickers_str = '_'.join(tickers)
-    log_file = f'logs/upload_free_{timestamp}_{tickers_str}.log'
+    log_file = LOGS_DIR / f'upload_free_{timestamp}_{tickers_str}.log'
     
     logging.basicConfig(
         level=logging.INFO,
@@ -53,14 +58,15 @@ def main():
         ["poetry", "run", "python", "src/upload/raw_data_table_uploader.py", "--tickers", tickers_str, "--table", "insider_trades"],
         ["poetry", "run", "python", "src/upload/raw_data_table_uploader.py", "--tickers", tickers_str, "--table", "line_items"],
         ["poetry", "run", "python", "src/upload/analysis_table_uploader.py", "--tickers", tickers_str],
-        ["poetry", "run", "python", "src/upload/sophie_analysis_table_uploader.py", "--tickers", tickers_str]
+        ["poetry", "run", "python", "src/upload/sophie_analysis_table_uploader.py", "--tickers", tickers_str],
+        ["poetry", "run", "python", "investment-clock/run.py"],
     ]
 
     for i, cmd in enumerate(commands, 1):
         logger.info(f"Running job {i}/{len(commands)}")
         run_command(cmd, logger)
     
-    logger.info("All free tickers uploads completed successfully!")
+    logger.info("All free tickers uploads + investment clock completed successfully!")
 
 if __name__ == "__main__":
     main()
