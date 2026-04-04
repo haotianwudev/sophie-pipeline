@@ -123,11 +123,12 @@ def clock_angle_from_z_scores(growth_z: float, inflation_z: float) -> float:
       6 o'clock (180°)  = bottom of Stagflation quadrant (low growth, low inflation border)
       9 o'clock (270°)  = top of Reflation quadrant (low inflation, low growth)
 
-    We use atan2(inflation_z, growth_z) which gives the standard mathematical angle
-    (counterclockwise from east), then convert to clockwise from north.
+    We use atan2(growth_z, inflation_z) so that growth maps to the y-axis (north = 12
+    o'clock) and inflation maps to the x-axis (east = 3 o'clock), matching the Merrill
+    Lynch convention where Recovery (growth↑, inflation low) is at 9–12 o'clock.
     """
-    # Standard math angle: east=0, counterclockwise positive
-    math_angle_rad = math.atan2(inflation_z, growth_z)
+    # Standard math angle: north=growth axis, east=inflation axis
+    math_angle_rad = math.atan2(growth_z, inflation_z)
     math_angle_deg = math.degrees(math_angle_rad)
     # Convert: clockwise from north = 90 - math_angle_deg
     clock_angle = (90 - math_angle_deg) % 360
