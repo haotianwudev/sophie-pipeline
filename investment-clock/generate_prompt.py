@@ -33,7 +33,13 @@ def generate_prompt() -> str:
           ROUND(cpi_value::numeric, 2) as cpi,
           ROUND(tcu_value::numeric, 1) as tcu,
           ROUND(unrate_value::numeric, 1) as unrate,
-          ROUND(indpro_value::numeric, 2) as indpro
+          ROUND(indpro_value::numeric, 2) as indpro,
+          ROUND(cli_value::numeric, 2) as cli,
+          ROUND(icsa_value::numeric, 0) as icsa,
+          ROUND(cpi_yoy::numeric, 2) as cpi_yoy,
+          ROUND(cpi_mom_ann::numeric, 2) as cpi_mom_ann,
+          ROUND(t5yie_value::numeric, 2) as t5yie,
+          ROUND(ppi_yoy::numeric, 2) as ppi_yoy
         FROM investment_clock_data
         ORDER BY biz_date DESC LIMIT 1
     """)
@@ -79,6 +85,14 @@ def generate_prompt() -> str:
     tcu         = latest.get("tcu", "N/A")
     unrate      = latest.get("unrate", "N/A")
     indpro      = latest.get("indpro", "N/A")
+    cli         = latest.get("cli", "N/A")
+    icsa_raw    = latest.get("icsa")
+    icsa        = f"{int(icsa_raw) // 1000}" if icsa_raw is not None else "N/A"
+    cpi_yoy     = latest.get("cpi_yoy", "N/A")
+    cpi_mom_ann_raw = latest.get("cpi_mom_ann")
+    cpi_mom_ann = f"{float(cpi_mom_ann_raw):.2f}" if cpi_mom_ann_raw is not None else "N/A"
+    t5yie       = latest.get("t5yie", "N/A")
+    ppi_yoy     = latest.get("ppi_yoy", "N/A")
 
     growth_dir    = "above-trend (expansionary)" if growth_z > 0 else "below-trend (contractionary)"
     inflation_dir = "above-trend (inflationary)" if inflation_z > 0 else "below-trend (disinflationary)"
@@ -105,17 +119,28 @@ Date: {today}
 QUANTITATIVE CONTEXT (Merrill Lynch Investment Clock Framework)
 ================================================================
 
-As of {biz_date}, the US economy shows the following HP-Filter cycle signals:
+As of {biz_date}, the US economy shows the following EWM Z-score cycle signals:
 
   Composite Growth Z-score:    {growth_z:+.3f}  ({growth_dir})
+    [CLI 50% + INDPRO 20% + inv. Jobless Claims 15% + inv. UNRATE 15%]
   Composite Inflation Z-score: {inflation_z:+.3f}  ({inflation_dir})
+    [5Y Breakeven 30% + CPI YoY vs 2% 25% + PPI YoY 20% + CPI MoM Ann vs 2% 15% + TCU 10%]
 
-Raw FRED Snapshots (latest available):
+Growth Indicators (latest available):
+  OECD CLI (USALOLITONOSTSAM):     {cli}  (>100 = expansion, <100 = contraction; 50% weight)
+  Initial Jobless Claims (ICSA):   {icsa}k/week  (inverted; rising = weakening labor; 15% weight)
+  Industrial Production (INDPRO):  {indpro}  (coincident output; 20% weight)
+  Unemployment Rate (UNRATE):      {unrate}%  (inverted; 15% weight)
+
+Inflation Indicators (latest available):
+  5Y Breakeven Inflation (T5YIE):  {t5yie}%  (market-implied forward inflation; 30% weight)
+  Core CPI YoY (CPILFESL):         {cpi_yoy}%  (vs 2% Fed target; 25% weight)
+  PPI Final Demand YoY (PPIFID):   {ppi_yoy}%  (pipeline inflation; 20% weight)
+  CPI MoM Annualized:              {cpi_mom_ann + "%" if cpi_mom_ann != "N/A" else "N/A (not yet released)"}  (real-time inflection; vs 2% target; 15% weight)
+  Capacity Utilization (TCU):      {tcu}%  (demand-pull pressure; 10% weight)
+
+Reference (not in composite):
   Real GDP (GDPC1):                {gdp}
-  Core CPI YoY (CPILFESL):         {cpi}
-  Industrial Production (INDPRO):  {indpro}
-  Capacity Utilization (TCU):      {tcu}%
-  Unemployment Rate (UNRATE):      {unrate}%
 
 Algorithmically-determined phase: {data_phase}
 Clock hand position: {clock_angle} degrees (0 = 12 o'clock, clockwise)

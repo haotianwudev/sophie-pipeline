@@ -1,9 +1,15 @@
 """
 Investment Clock ETL Agent
 
-Fetches FRED macroeconomic data, applies the Hodrick-Prescott filter to extract
-cyclical components, computes composite Z-scores, and determines the current
-Investment Clock phase (Reflation / Recovery / Overheat / Stagflation).
+Fetches FRED macroeconomic data, computes exponential-weighted rolling Z-scores,
+and determines the current Investment Clock phase
+(Reflation / Recovery / Overheat / Stagflation).
+
+Methodology:
+  Growth composite  = 50% OECD CLI + 20% INDPRO + 15% inv. ICSA + 15% inv. UNRATE
+  Inflation composite = 30% 5Y Breakeven (vs 2%) + 25% CPI YoY (vs 2%)
+                      + 20% PPI Final Demand YoY + 15% CPI MoM ann (vs 2%) + 10% TCU
+  Normalization: EWM Z-score (span=24). CPI/breakeven compared to 2% target, not relative mean.
 
 Run manually:
     python -m src.agents.investment_clock
@@ -17,30 +23,49 @@ Phase logic (Merrill Lynch Investment Clock):
 
 import os
 import math
-import json
 import datetime
 import numpy as np
 import pandas as pd
 import psycopg2
-from psycopg2.extras import RealDictCursor
 from dotenv import load_dotenv
 from colorama import Fore, Style
 
 load_dotenv()
 
 # ---------------------------------------------------------------------------
-# FRED series configuration
-# lambda: HP filter smoothing parameter (1600 for quarterly, 14400 for monthly)
-# weight_growth / weight_inflation: how much this series contributes to composite Z-score
-# invert: multiply cycle by -1 (unemployment is inverse of growth)
+# FRED series to fetch
 # ---------------------------------------------------------------------------
-FRED_SERIES = {
-    "GDPC1":    {"lambda": 1600,  "freq": "quarterly", "weight_growth": 0.40, "weight_inflation": 0.0,  "invert": False},
-    "INDPRO":   {"lambda": 14400, "freq": "monthly",   "weight_growth": 0.35, "weight_inflation": 0.0,  "invert": False},
-    "UNRATE":   {"lambda": 14400, "freq": "monthly",   "weight_growth": 0.25, "weight_inflation": 0.0,  "invert": True},
-    "CPILFESL": {"lambda": 14400, "freq": "monthly",   "weight_growth": 0.0,  "weight_inflation": 0.70, "invert": False},
-    "TCU":      {"lambda": 14400, "freq": "monthly",   "weight_growth": 0.0,  "weight_inflation": 0.30, "invert": False},
+FRED_SERIES_IDS = [
+    "USALOLITONOSTSAM",  # OECD CLI (monthly)
+    "ICSA",              # Initial Jobless Claims (weekly)
+    "INDPRO",            # Industrial Production Index (monthly)
+    "UNRATE",            # Unemployment Rate (monthly)
+    "CPILFESL",          # Core CPI (monthly, index level)
+    "TCU",               # Capacity Utilization (monthly)
+    "T5YIE",             # 5-Year Breakeven Inflation Rate (daily)
+    "PPIFID",            # PPI: Final Demand (monthly)
+    "GDPC1",             # Real GDP (quarterly, for display only)
+]
+
+# ---------------------------------------------------------------------------
+# Composite weights
+# ---------------------------------------------------------------------------
+GROWTH_WEIGHTS = {
+    "USALOLITONOSTSAM": 0.50,   # Leading (3-6m forward)
+    "ICSA_INV":         0.15,   # Leading labor (inverted)
+    "INDPRO":           0.20,   # Coincident output
+    "UNRATE_INV":       0.15,   # Lagging confirmation (inverted)
 }
+
+INFLATION_WEIGHTS = {
+    "T5YIE":       0.30,   # Leading: market expectation vs 2% target
+    "CPI_YOY":     0.25,   # Lagging confirmer vs 2% target
+    "PPI_YOY":     0.20,   # Pipeline leading (leads CPI 2-6 months)
+    "CPI_MOM_ANN": 0.15,   # Real-time inflection vs 2% target
+    "TCU":         0.10,   # Capacity pressure
+}
+
+FED_TARGET = 2.0  # Fed's 2% inflation target — the neutral baseline
 
 PHASE_MAP = {
     (True, False):  "Recovery",    # growth above trend, inflation below trend
@@ -68,29 +93,6 @@ def get_db_connection():
     return psycopg2.connect(connection_string)
 
 
-def hp_filter(series: pd.Series, lamb: int) -> tuple[pd.Series, pd.Series]:
-    """
-    Apply the Hodrick-Prescott filter. Returns (cycle, trend).
-    Uses statsmodels if available, otherwise falls back to scipy sparse matrix implementation.
-    """
-    try:
-        from statsmodels.tsa.filters.hp_filter import hpfilter
-        cycle, trend = hpfilter(series.dropna(), lamb=lamb)
-        return cycle, trend
-    except ImportError:
-        # Fallback: scipy-based HP filter
-        from scipy import sparse
-        from scipy.sparse import linalg
-        T = len(series.dropna())
-        vals = series.dropna().values
-        I = sparse.eye(T, format='csc')
-        D = sparse.diags([1, -2, 1], [0, 1, 2], shape=(T - 2, T), format='csc')
-        trend_vals = linalg.spsolve(I + lamb * D.T @ D, vals)
-        trend = pd.Series(trend_vals, index=series.dropna().index)
-        cycle = series.dropna() - trend
-        return cycle, trend
-
-
 def fetch_fred_series(series_id: str, start_date: str, api_key: str) -> pd.Series:
     """Fetch a FRED series and return as a pandas Series indexed by date."""
     try:
@@ -104,13 +106,29 @@ def fetch_fred_series(series_id: str, start_date: str, api_key: str) -> pd.Serie
         raise
 
 
-def compute_z_scores(series: pd.Series) -> pd.Series:
-    """Normalize a series to Z-scores using its full historical mean and std."""
-    mean = series.mean()
-    std = series.std()
-    if std == 0:
-        return series * 0
-    return (series - mean) / std
+def ewm_z_score(series: pd.Series, span: int = 24, min_periods: int = 12) -> pd.Series:
+    """Exponential-weighted rolling Z-score. No end-point bias.
+    NaN inputs (missing data) are forward-filled so the last valid Z-score carries
+    forward rather than collapsing to 0 (at-the-mean)."""
+    ewm_mean = series.ewm(span=span, min_periods=min_periods, ignore_na=True).mean()
+    ewm_std  = series.ewm(span=span, min_periods=min_periods, ignore_na=True).std()
+    z = (series - ewm_mean) / ewm_std.replace(0, float('nan'))
+    return z.ffill().fillna(0)
+
+
+def compute_cpi_yoy(cpi: pd.Series) -> pd.Series:
+    """12-month percent change of CPI index level."""
+    return cpi.pct_change(12) * 100
+
+
+def compute_cpi_mom_annualized(cpi: pd.Series) -> pd.Series:
+    """Compound-annualized month-over-month CPI change.
+    Returns NaN when MoM is exactly 0 (forward-filled stale data)."""
+    mom = cpi.pct_change(1)
+    result = ((1 + mom) ** 12 - 1) * 100
+    # MoM=0 means the CPI value was forward-filled (data not yet released)
+    result[mom == 0] = float('nan')
+    return result
 
 
 def clock_angle_from_z_scores(growth_z: float, inflation_z: float) -> float:
@@ -125,78 +143,99 @@ def clock_angle_from_z_scores(growth_z: float, inflation_z: float) -> float:
 
     We use atan2(growth_z, inflation_z) so that growth maps to the y-axis (north = 12
     o'clock) and inflation maps to the x-axis (east = 3 o'clock), matching the Merrill
-    Lynch convention where Recovery (growth↑, inflation low) is at 9–12 o'clock.
+    Lynch convention where Recovery (growth↑, inflation low) is at 9-12 o'clock.
     """
-    # Standard math angle: north=growth axis, east=inflation axis
     math_angle_rad = math.atan2(growth_z, inflation_z)
     math_angle_deg = math.degrees(math_angle_rad)
-    # Convert: clockwise from north = 90 - math_angle_deg
     clock_angle = (90 - math_angle_deg) % 360
     return round(clock_angle, 4)
 
 
+def safe_float(series: pd.Series, idx) -> float | None:
+    """Extract a float from a pandas Series, returning None for NaN/missing."""
+    val = series.get(idx)
+    if val is None:
+        return None
+    try:
+        f = float(val)
+        return None if math.isnan(f) else f
+    except (TypeError, ValueError):
+        return None
+
+
 def run_etl():
     """
-    Main ETL function. Fetches FRED data, applies HP filter, computes Z-scores,
+    Main ETL function. Fetches FRED data, computes EWM Z-scores,
     determines phases and clock angles, then upserts all monthly rows to DB.
     """
     api_key = os.environ.get("FRED_API_KEY")
     if not api_key:
         raise ValueError("FRED_API_KEY environment variable not set")
 
-    # Fetch 12 years of data for HP filter warm-up
-    start_date = (datetime.date.today() - datetime.timedelta(days=365 * 12)).strftime("%Y-%m-%d")
+    # 10 years of data — need ~2yr warm-up for ewm(span=24)
+    start_date = (datetime.date.today() - datetime.timedelta(days=365 * 10)).strftime("%Y-%m-%d")
 
     print(f"{Fore.CYAN}Fetching FRED series...{Style.RESET_ALL}")
 
-    raw_series = {}
-    for series_id, config in FRED_SERIES.items():
-        print(f"  Fetching {series_id} ({config['freq']})...")
-        raw_series[series_id] = fetch_fred_series(series_id, start_date, api_key)
+    raw = {}
+    for sid in FRED_SERIES_IDS:
+        print(f"  Fetching {sid}...")
+        raw[sid] = fetch_fred_series(sid, start_date, api_key)
 
-    # Resample everything to monthly frequency (end of month)
-    # GDP is quarterly — forward-fill to monthly
+    # Resample to monthly (end of month)
+    print(f"{Fore.CYAN}Resampling to monthly...{Style.RESET_ALL}")
     monthly = {}
-    for series_id, series in raw_series.items():
-        resampled = series.resample("ME").last().ffill()
-        monthly[series_id] = resampled
+    for sid, series in raw.items():
+        if sid == "ICSA":
+            monthly[sid] = series.resample("ME").mean()          # weekly → monthly average
+        elif sid == "T5YIE":
+            monthly[sid] = series.resample("ME").mean()          # daily → monthly average
+        elif sid == "GDPC1":
+            monthly[sid] = series.resample("ME").last().ffill()  # quarterly → monthly ffill
+        else:
+            monthly[sid] = series.resample("ME").last().ffill()
 
-    # Align all series to a common monthly index
-    combined = pd.DataFrame(monthly)
-    combined = combined.dropna(how="all").ffill()
+    combined = pd.DataFrame(monthly).dropna(how="all").ffill()
 
-    print(f"{Fore.CYAN}Applying HP filters...{Style.RESET_ALL}")
+    # --- Derived signals ---
+    cpi_yoy = compute_cpi_yoy(combined["CPILFESL"])
+    cpi_mom_ann = compute_cpi_mom_annualized(combined["CPILFESL"])
+    indpro_yoy = combined["INDPRO"].pct_change(12) * 100
+    icsa_yoy = combined["ICSA"].pct_change(12) * 100
+    unrate_diff = combined["UNRATE"].diff(12)
+    ppi_yoy = combined["PPIFID"].pct_change(12) * 100
 
-    cycles = {}
-    for series_id, config in FRED_SERIES.items():
-        if series_id not in combined.columns:
-            continue
-        series = combined[series_id].dropna()
-        cycle, _ = hp_filter(series, lamb=config["lambda"])
-        # Reindex to combined index
-        cycle = cycle.reindex(combined.index)
-        # Invert if needed (unemployment is inverse indicator of growth)
-        if config["invert"]:
-            cycle = -cycle
-        cycles[series_id] = cycle
+    # --- EWM Z-scores ---
+    print(f"{Fore.CYAN}Computing EWM Z-scores...{Style.RESET_ALL}")
 
-    # Build Z-score normalized cycles
-    z_scores = {}
-    for series_id, cycle in cycles.items():
-        z_scores[series_id] = compute_z_scores(cycle)
+    # GROWTH: CLI is pre-normalized by OECD (100 = long-run trend).
+    # Scale (CLI-100) by its historical std so deviations are Z-score-like.
+    cli_deviation = combined["USALOLITONOSTSAM"] - 100
+    cli_std = cli_deviation.std()
+    cli_z = cli_deviation / cli_std if cli_std > 0 else cli_deviation * 0
 
-    # Composite growth and inflation Z-scores
-    growth_z = sum(
-        z_scores[sid] * cfg["weight_growth"]
-        for sid, cfg in FRED_SERIES.items()
-        if sid in z_scores and cfg["weight_growth"] > 0
-    )
-    inflation_z = sum(
-        z_scores[sid] * cfg["weight_inflation"]
-        for sid, cfg in FRED_SERIES.items()
-        if sid in z_scores and cfg["weight_inflation"] > 0
-    )
+    # INFLATION: CPI and breakeven signals compared to Fed's 2% target.
+    # Subtracting FED_TARGET before Z-scoring anchors "neutral" at 2%,
+    # so 2.4% YoY is positive (above target) instead of negative (below recent spike mean).
+    z = {
+        # Growth components
+        "USALOLITONOSTSAM": cli_z,
+        "ICSA_INV":         ewm_z_score(-icsa_yoy),
+        "INDPRO":           ewm_z_score(indpro_yoy),
+        "UNRATE_INV":       ewm_z_score(-unrate_diff),
+        # Inflation components — all anchored to 2% target
+        "T5YIE":            ewm_z_score(combined["T5YIE"] - FED_TARGET),
+        "CPI_YOY":          ewm_z_score(cpi_yoy - FED_TARGET),
+        "PPI_YOY":          ewm_z_score(ppi_yoy),
+        "CPI_MOM_ANN":      ewm_z_score(cpi_mom_ann - FED_TARGET),
+        "TCU":              ewm_z_score(combined["TCU"]),
+    }
 
+    # --- Composite scores ---
+    growth_z = sum(z[k] * w for k, w in GROWTH_WEIGHTS.items())
+    inflation_z = sum(z[k] * w for k, w in INFLATION_WEIGHTS.items())
+
+    # --- Upsert to DB ---
     print(f"{Fore.CYAN}Upserting to database...{Style.RESET_ALL}")
 
     conn = get_db_connection()
@@ -205,28 +244,30 @@ def run_etl():
     upsert_sql = """
         INSERT INTO investment_clock_data (
             biz_date,
-            gdp_cyclical, cpi_cyclical, indpro_cyclical, tcu_cyclical, unrate_cyclical,
             growth_z_score, inflation_z_score,
             data_phase, clock_angle,
-            gdp_value, cpi_value, indpro_value, tcu_value, unrate_value
+            gdp_value, cpi_value, indpro_value, tcu_value, unrate_value,
+            cli_value, icsa_value, cpi_yoy, cpi_mom_ann,
+            t5yie_value, ppi_yoy
         ) VALUES (
-            %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+            %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
         )
         ON CONFLICT (biz_date) DO UPDATE SET
-            gdp_cyclical = EXCLUDED.gdp_cyclical,
-            cpi_cyclical = EXCLUDED.cpi_cyclical,
-            indpro_cyclical = EXCLUDED.indpro_cyclical,
-            tcu_cyclical = EXCLUDED.tcu_cyclical,
-            unrate_cyclical = EXCLUDED.unrate_cyclical,
-            growth_z_score = EXCLUDED.growth_z_score,
+            growth_z_score    = EXCLUDED.growth_z_score,
             inflation_z_score = EXCLUDED.inflation_z_score,
-            data_phase = EXCLUDED.data_phase,
-            clock_angle = EXCLUDED.clock_angle,
-            gdp_value = EXCLUDED.gdp_value,
-            cpi_value = EXCLUDED.cpi_value,
-            indpro_value = EXCLUDED.indpro_value,
-            tcu_value = EXCLUDED.tcu_value,
-            unrate_value = EXCLUDED.unrate_value
+            data_phase        = EXCLUDED.data_phase,
+            clock_angle       = EXCLUDED.clock_angle,
+            gdp_value         = EXCLUDED.gdp_value,
+            cpi_value         = EXCLUDED.cpi_value,
+            indpro_value      = EXCLUDED.indpro_value,
+            tcu_value         = EXCLUDED.tcu_value,
+            unrate_value      = EXCLUDED.unrate_value,
+            cli_value         = EXCLUDED.cli_value,
+            icsa_value        = EXCLUDED.icsa_value,
+            cpi_yoy           = EXCLUDED.cpi_yoy,
+            cpi_mom_ann       = EXCLUDED.cpi_mom_ann,
+            t5yie_value       = EXCLUDED.t5yie_value,
+            ppi_yoy           = EXCLUDED.ppi_yoy
     """
 
     rows_upserted = 0
@@ -241,17 +282,8 @@ def run_etl():
         phase = PHASE_MAP[(g > 0, i > 0)]
         angle = clock_angle_from_z_scores(g, i)
 
-        def safe_float(series, idx):
-            val = series.get(idx)
-            return float(val) if val is not None and not (isinstance(val, float) and math.isnan(val)) else None
-
         cursor.execute(upsert_sql, (
             date.date(),
-            safe_float(cycles.get("GDPC1", pd.Series(dtype=float)), date),
-            safe_float(cycles.get("CPILFESL", pd.Series(dtype=float)), date),
-            safe_float(cycles.get("INDPRO", pd.Series(dtype=float)), date),
-            safe_float(cycles.get("TCU", pd.Series(dtype=float)), date),
-            safe_float(cycles.get("UNRATE", pd.Series(dtype=float)), date),
             round(g, 4),
             round(i, 4),
             phase,
@@ -261,6 +293,12 @@ def run_etl():
             safe_float(combined.get("INDPRO", pd.Series(dtype=float)), date),
             safe_float(combined.get("TCU", pd.Series(dtype=float)), date),
             safe_float(combined.get("UNRATE", pd.Series(dtype=float)), date),
+            safe_float(combined.get("USALOLITONOSTSAM", pd.Series(dtype=float)), date),
+            safe_float(combined.get("ICSA", pd.Series(dtype=float)), date),
+            safe_float(cpi_yoy, date),
+            safe_float(cpi_mom_ann, date),
+            safe_float(combined.get("T5YIE", pd.Series(dtype=float)), date),
+            safe_float(ppi_yoy, date),
         ))
         rows_upserted += 1
 
@@ -275,12 +313,25 @@ def run_etl():
     phase_latest = PHASE_MAP[(g_latest > 0, i_latest > 0)]
     angle_latest = clock_angle_from_z_scores(g_latest, i_latest)
 
+    cli_val     = safe_float(combined["USALOLITONOSTSAM"], latest_date)
+    icsa_val    = safe_float(combined["ICSA"], latest_date)
+    t5yie_val   = safe_float(combined["T5YIE"], latest_date)
+    cpi_yoy_val = safe_float(cpi_yoy, latest_date)
+    cpi_mom_val = safe_float(cpi_mom_ann, latest_date)
+    ppi_yoy_val = safe_float(ppi_yoy, latest_date)
+
     print(f"\n{Fore.GREEN}Done! Upserted {rows_upserted} rows.{Style.RESET_ALL}")
     print(f"\nLatest reading ({latest_date.date()}):")
     print(f"  Growth Z-score:    {g_latest:+.4f}")
     print(f"  Inflation Z-score: {i_latest:+.4f}")
     print(f"  Phase:             {phase_latest}")
-    print(f"  Clock angle:       {angle_latest}°")
+    print(f"  Clock angle:       {angle_latest}\u00b0")
+    print(f"\n  OECD CLI:          {cli_val:.2f}" if cli_val else "  OECD CLI:          N/A")
+    print(f"  Jobless Claims:    {icsa_val:.0f}" if icsa_val else "  Jobless Claims:    N/A")
+    print(f"  5Y Breakeven:      {t5yie_val:.2f}%" if t5yie_val else "  5Y Breakeven:      N/A")
+    print(f"  CPI YoY:           {cpi_yoy_val:.2f}%" if cpi_yoy_val else "  CPI YoY:           N/A")
+    print(f"  PPI YoY:           {ppi_yoy_val:.2f}%" if ppi_yoy_val else "  PPI YoY:           N/A")
+    print(f"  CPI MoM Ann:       {cpi_mom_val:.2f}%" if cpi_mom_val else "  CPI MoM Ann:       N/A")
 
 
 if __name__ == "__main__":
