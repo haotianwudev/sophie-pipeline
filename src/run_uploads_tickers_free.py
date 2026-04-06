@@ -60,13 +60,14 @@ def main():
         ["poetry", "run", "python", "src/upload/analysis_table_uploader.py", "--tickers", tickers_str],
         ["poetry", "run", "python", "src/upload/sophie_analysis_table_uploader.py", "--tickers", tickers_str],
         ["poetry", "run", "python", "investment-clock/run.py"],
+        ["poetry", "run", "python", "quant-trending/run.py"],
     ]
 
     for i, cmd in enumerate(commands, 1):
         logger.info(f"Running job {i}/{len(commands)}")
         run_command(cmd, logger)
-    
-    logger.info("All free tickers uploads + investment clock completed successfully!")
+
+    logger.info("All free tickers uploads + investment clock + quant trending completed successfully!")
 
 if __name__ == "__main__":
     main()
