@@ -5,7 +5,7 @@ from rich.style import Style
 from rich.text import Text
 from typing import Dict, Optional
 
-console = Console()
+console = Console(highlight=False, force_terminal=False)
 
 
 class AgentProgress:
@@ -63,13 +63,13 @@ class AgentProgress:
             # Create the status text with appropriate styling
             if status.lower() == "done":
                 style = Style(color="green", bold=True)
-                symbol = "✓"
+                symbol = "OK"
             elif status.lower() == "error":
                 style = Style(color="red", bold=True)
-                symbol = "✗"
+                symbol = "!!"
             else:
                 style = Style(color="yellow")
-                symbol = "⋯"
+                symbol = ".."
 
             agent_display = agent_name.replace("_agent", "").replace("_", " ").title()
             status_text = Text()
