@@ -209,10 +209,10 @@ def run_etl():
     print(f"{Fore.CYAN}Computing EWM Z-scores...{Style.RESET_ALL}")
 
     # GROWTH: CLI is pre-normalized by OECD (100 = long-run trend).
-    # Scale (CLI-100) by its historical std so deviations are Z-score-like.
+    # Use ewm_z_score on (CLI-100) for consistency with all other components —
+    # avoids full-sample std rescaling all historical values each run.
     cli_deviation = combined["USALOLITONOSTSAM"] - 100
-    cli_std = cli_deviation.std()
-    cli_z = cli_deviation / cli_std if cli_std > 0 else cli_deviation * 0
+    cli_z = ewm_z_score(cli_deviation)
 
     # INFLATION: CPI and breakeven signals compared to Fed's 2% target.
     # Subtracting FED_TARGET before Z-scoring anchors "neutral" at 2%,
