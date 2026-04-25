@@ -241,6 +241,11 @@ def run_etl():
     conn = get_db_connection()
     cursor = conn.cursor()
 
+    # Z-scores, phase, and clock angle are frozen once a month closes.
+    # Only the current calendar month's row gets updated composite values —
+    # this prevents new FRED releases from retroactively shifting prior months
+    # via EWM recalculation (the root cause of Stagflation→Overheat flips in the UI).
+    # Raw indicator values are always updated to capture FRED revisions.
     upsert_sql = """
         INSERT INTO investment_clock_data (
             biz_date,
@@ -253,10 +258,26 @@ def run_etl():
             %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
         )
         ON CONFLICT (biz_date) DO UPDATE SET
-            growth_z_score    = EXCLUDED.growth_z_score,
-            inflation_z_score = EXCLUDED.inflation_z_score,
-            data_phase        = EXCLUDED.data_phase,
-            clock_angle       = EXCLUDED.clock_angle,
+            growth_z_score    = CASE
+                WHEN date_trunc('month', investment_clock_data.biz_date) >= date_trunc('month', CURRENT_DATE)
+                THEN EXCLUDED.growth_z_score
+                ELSE investment_clock_data.growth_z_score
+            END,
+            inflation_z_score = CASE
+                WHEN date_trunc('month', investment_clock_data.biz_date) >= date_trunc('month', CURRENT_DATE)
+                THEN EXCLUDED.inflation_z_score
+                ELSE investment_clock_data.inflation_z_score
+            END,
+            data_phase        = CASE
+                WHEN date_trunc('month', investment_clock_data.biz_date) >= date_trunc('month', CURRENT_DATE)
+                THEN EXCLUDED.data_phase
+                ELSE investment_clock_data.data_phase
+            END,
+            clock_angle       = CASE
+                WHEN date_trunc('month', investment_clock_data.biz_date) >= date_trunc('month', CURRENT_DATE)
+                THEN EXCLUDED.clock_angle
+                ELSE investment_clock_data.clock_angle
+            END,
             gdp_value         = EXCLUDED.gdp_value,
             cpi_value         = EXCLUDED.cpi_value,
             indpro_value      = EXCLUDED.indpro_value,

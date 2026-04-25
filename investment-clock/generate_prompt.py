@@ -49,15 +49,18 @@ def generate_prompt() -> str:
         cur.close(); conn.close()
         raise RuntimeError("investment_clock_data is empty — run the ETL first.")
 
+    # One entry per calendar month (latest biz_date within each month).
+    # This prevents intra-month churn from showing multiple rows and keeps
+    # closed-month phases stable at their end-of-month snapshot.
     cur.execute("""
-        SELECT
+        SELECT DISTINCT ON (date_trunc('month', biz_date))
           TO_CHAR(biz_date, 'YYYY-MM') as month,
           ROUND(growth_z_score::numeric, 3) as growth_z,
           ROUND(inflation_z_score::numeric, 3) as inflation_z,
           data_phase
         FROM investment_clock_data
         WHERE biz_date >= CURRENT_DATE - INTERVAL '6 months'
-        ORDER BY biz_date ASC
+        ORDER BY date_trunc('month', biz_date), biz_date DESC
     """)
     trajectory = [dict(r) for r in cur.fetchall()]
 
@@ -72,6 +75,20 @@ def generate_prompt() -> str:
         ORDER BY biz_date DESC LIMIT 1
     """)
     prev = dict(cur.fetchone() or {})
+
+    # Fallback for CPI MoM Ann when not yet released in the current row
+    cpi_mom_ann_fallback = None
+    if latest.get("cpi_mom_ann") is None:
+        cur.execute("""
+            SELECT ROUND(cpi_mom_ann::numeric, 2) as val,
+                   TO_CHAR(biz_date, 'YYYY-MM') as month
+            FROM investment_clock_data
+            WHERE cpi_mom_ann IS NOT NULL
+            ORDER BY biz_date DESC LIMIT 1
+        """)
+        fb = cur.fetchone()
+        cpi_mom_ann_fallback = dict(fb) if fb else None
+
     cur.close(); conn.close()
 
     today       = datetime.date.today().strftime("%Y-%m-%d")
@@ -90,7 +107,12 @@ def generate_prompt() -> str:
     icsa        = f"{int(icsa_raw) // 1000}" if icsa_raw is not None else "N/A"
     cpi_yoy     = latest.get("cpi_yoy", "N/A")
     cpi_mom_ann_raw = latest.get("cpi_mom_ann")
-    cpi_mom_ann = f"{float(cpi_mom_ann_raw):.2f}" if cpi_mom_ann_raw is not None else "N/A"
+    if cpi_mom_ann_raw is not None:
+        cpi_mom_ann = f"{float(cpi_mom_ann_raw):.2f}%"
+    elif cpi_mom_ann_fallback:
+        cpi_mom_ann = f"{float(cpi_mom_ann_fallback['val']):.2f}% (as of {cpi_mom_ann_fallback['month']})"
+    else:
+        cpi_mom_ann = "N/A (no prior data)"
     t5yie       = latest.get("t5yie", "N/A")
     ppi_yoy     = latest.get("ppi_yoy", "N/A")
 
@@ -136,7 +158,7 @@ Inflation Indicators (latest available):
   5Y Breakeven Inflation (T5YIE):  {t5yie}%  (market-implied forward inflation; 30% weight)
   Core CPI YoY (CPILFESL):         {cpi_yoy}%  (vs 2% Fed target; 25% weight)
   PPI Final Demand YoY (PPIFID):   {ppi_yoy}%  (pipeline inflation; 20% weight)
-  CPI MoM Annualized:              {cpi_mom_ann + "%" if cpi_mom_ann != "N/A" else "N/A (not yet released)"}  (real-time inflection; vs 2% target; 15% weight)
+  CPI MoM Annualized:              {cpi_mom_ann}  (real-time inflection; vs 2% target; 15% weight)
   Capacity Utilization (TCU):      {tcu}%  (demand-pull pressure; 10% weight)
 
 Reference (not in composite):
