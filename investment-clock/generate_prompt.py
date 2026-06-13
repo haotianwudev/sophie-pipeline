@@ -245,6 +245,8 @@ def save_and_print(prompt: str, today: str):
     output_file.write_text(prompt, encoding="utf-8")
     sys.stdout.flush()
     print(f"Prompt saved to {output_file}\n")
+    # Use UTF-8 encoding for stdout to handle Unicode characters on Windows
+    sys.stdout.reconfigure(encoding='utf-8') if hasattr(sys.stdout, 'reconfigure') else None
     print(prompt)
 
 
