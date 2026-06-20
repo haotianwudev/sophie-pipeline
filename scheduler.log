@@ -5933,3 +5933,1539 @@ Traceback (most recent call last):
     print(prompt)
 UnicodeEncodeError: 'gbk' codec can't encode character '\u2022' in position 2292: illegal multibyte sequence
 2026-06-12 19:06:27,547 - ERROR - Command failed with error: Command '['poetry', 'run', 'python', 'investment-clock/run.py']' returned non-zero exit status 1.
+2026-06-19 19:00:03,160 - INFO - Starting free tickers upload process for: AAPL, MSFT, NVDA
+2026-06-19 19:00:03,161 - INFO - Running job 1/10
+2026-06-19 19:00:03,161 - INFO - Starting command: poetry run python src/upload/raw_data_table_uploader.py --tickers AAPL,MSFT,NVDA --table company_facts
+
+Loading financial data for 3 tickers
+Date range: 2025-03-26 to 2026-06-19
+
+Processing company_facts for 3 tickers...
+Completed company_facts: 3/3 succeeded
+
+Summary:
+  Total tickers processed: 3
+  company_facts - Successful: 3
+  company_facts - Failed: 0
+2026-06-19 19:00:08,246 - INFO - Command completed successfully in 5.09 seconds
+2026-06-19 19:00:08,246 - INFO - Running job 2/10
+2026-06-19 19:00:08,246 - INFO - Starting command: poetry run python src/upload/raw_data_table_uploader.py --tickers AAPL,MSFT,NVDA --table prices
+
+Loading financial data for 3 tickers
+Date range: 2025-03-26 to 2026-06-19
+
+Processing prices for 3 tickers...
+
+==============================
+UPLOAD PRICES: 3 tickers, mode: auto
+Date range: 2025-03-26 to 2026-06-19
+==============================
+
+
+--------------------------------------------------
+Processing AAPL...
+Using waterfall logic for data source selection
+STRATEGY: Date range is within 2 years, using Polygon as primary/next source
+Using Polygon for AAPL...
+API CALL: Polygon - Fetching AAPL from 2025-03-26 to 2026-06-19
+POLYGON API: Initializing request for AAPL
+POLYGON API: Date range 2025-03-26 to 2026-06-19
+POLYGON API: Using API key hzC7****Us_7
+POLYGON API: Sending request to Polygon.io API
+POLYGON API: Received 310 records for AAPL
+POLYGON API: First date: 2025-03-26, Last date: 2026-06-18
+POLYGON API: Converting data to Price objects
+POLYGON API: Created 310 Price objects
+POLYGON API: Saving data to database
+Successfully saved 310 price records for AAPL
+POLYGON API: Successfully saved 310 records to database
+SUCCESS: Polygon data for AAPL saved to database
+
+--------------------------------------------------
+Processing MSFT...
+Using waterfall logic for data source selection
+STRATEGY: Date range is within 2 years, using Polygon as primary/next source
+Using Polygon for MSFT...
+API CALL: Polygon - Fetching MSFT from 2025-03-26 to 2026-06-19
+POLYGON API: Initializing request for MSFT
+POLYGON API: Date range 2025-03-26 to 2026-06-19
+POLYGON API: Using API key hzC7****Us_7
+POLYGON API: Sending request to Polygon.io API
+POLYGON API: Received 310 records for MSFT
+POLYGON API: First date: 2025-03-26, Last date: 2026-06-18
+POLYGON API: Converting data to Price objects
+POLYGON API: Created 310 Price objects
+POLYGON API: Saving data to database
+Successfully saved 310 price records for MSFT
+POLYGON API: Successfully saved 310 records to database
+SUCCESS: Polygon data for MSFT saved to database
+
+--------------------------------------------------
+Processing NVDA...
+Using waterfall logic for data source selection
+STRATEGY: Date range is within 2 years, using Polygon as primary/next source
+Using Polygon for NVDA...
+API CALL: Polygon - Fetching NVDA from 2025-03-26 to 2026-06-19
+POLYGON API: Initializing request for NVDA
+POLYGON API: Date range 2025-03-26 to 2026-06-19
+POLYGON API: Using API key hzC7****Us_7
+POLYGON API: Sending request to Polygon.io API
+POLYGON API: Received 310 records for NVDA
+POLYGON API: First date: 2025-03-26, Last date: 2026-06-18
+POLYGON API: Converting data to Price objects
+POLYGON API: Created 310 Price objects
+POLYGON API: Saving data to database
+Successfully saved 310 price records for NVDA
+POLYGON API: Successfully saved 310 records to database
+SUCCESS: Polygon data for NVDA saved to database
+
+==============================
+UPLOAD SUMMARY:
+Total processed: 3
+Success: 3 - AAPL, MSFT, NVDA
+Failed: 0 - None
+==============================
+
+Completed prices: 3/3 succeeded
+
+Summary:
+  Total tickers processed: 3
+  prices - Successful: 3
+  prices - Failed: 0
+2026-06-19 19:00:22,648 - INFO - Command completed successfully in 14.40 seconds
+2026-06-19 19:00:22,650 - INFO - Running job 3/10
+2026-06-19 19:00:22,650 - INFO - Starting command: poetry run python src/upload/raw_data_table_uploader.py --tickers AAPL,MSFT,NVDA --table company_news
+
+Loading financial data for 3 tickers
+Date range: 2025-03-26 to 2026-06-19
+
+Processing company_news for 3 tickers...
+Completed company_news: 0/3 succeeded
+
+Summary:
+  Total tickers processed: 3
+  company_news - Successful: 0
+  company_news - Failed: 3
+2026-06-19 19:00:24,759 - INFO - Command completed successfully in 2.11 seconds
+2026-06-19 19:00:24,759 - INFO - Running job 4/10
+2026-06-19 19:00:24,759 - INFO - Starting command: poetry run python src/upload/raw_data_table_uploader.py --tickers AAPL,MSFT,NVDA --table financial_metrics
+
+Loading financial data for 3 tickers
+Date range: 2025-03-26 to 2026-06-19
+
+Processing financial_metrics for 3 tickers...
+Successfully saved 13 financial metrics records
+Successfully saved 13 financial metrics records
+Successfully saved 12 financial metrics records
+Completed financial_metrics: 3/3 succeeded
+
+Summary:
+  Total tickers processed: 3
+  financial_metrics - Successful: 3
+  financial_metrics - Failed: 0
+2026-06-19 19:00:28,112 - INFO - Command completed successfully in 3.35 seconds
+2026-06-19 19:00:28,113 - INFO - Running job 5/10
+2026-06-19 19:00:28,113 - INFO - Starting command: poetry run python src/upload/raw_data_table_uploader.py --tickers AAPL,MSFT,NVDA --table insider_trades
+
+Loading financial data for 3 tickers
+Date range: 2025-03-26 to 2026-06-19
+
+Processing insider_trades for 3 tickers...
+Deleted existing insider trades for AAPL
+Saved 239 insider trade records after deduplication
+Deleted existing insider trades for MSFT
+Saved 435 insider trade records after deduplication
+Deleted existing insider trades for NVDA
+Saved 285 insider trade records after deduplication
+Completed insider_trades: 3/3 succeeded
+
+Summary:
+  Total tickers processed: 3
+  insider_trades - Successful: 3
+  insider_trades - Failed: 0
+2026-06-19 19:00:31,328 - INFO - Command completed successfully in 3.22 seconds
+2026-06-19 19:00:31,329 - INFO - Running job 6/10
+2026-06-19 19:00:31,329 - INFO - Starting command: poetry run python src/upload/raw_data_table_uploader.py --tickers AAPL,MSFT,NVDA --table line_items
+
+Loading financial data for 3 tickers
+Date range: 2025-03-26 to 2026-06-19
+
+Processing line_items for 3 tickers...
+Successfully saved 13 line items records
+Successfully saved 13 line items records
+Successfully saved 12 line items records
+Completed line_items: 3/3 succeeded
+
+Summary:
+  Total tickers processed: 3
+  line_items - Successful: 3
+  line_items - Failed: 0
+2026-06-19 19:00:34,386 - INFO - Command completed successfully in 3.06 seconds
+2026-06-19 19:00:34,386 - INFO - Running job 7/10
+2026-06-19 19:00:34,386 - INFO - Starting command: poetry run python src/upload/analysis_table_uploader.py --tickers AAPL,MSFT,NVDA
+
+Using analysts: Warren Buffett, Charlie Munger, Ben Graham, Cathie Wood, Stanley Druckenmiller, Fundamentals Analyst, Valuation Analyst, Sentiment Analyst, Technical Analyst
+
+Using OLLAMA model: deepseek-r1:14b
+
+LLM Error with Ollama deepseek-r1:14b by charlie_munger_agent: Invalid json output: **Signal: Bullish**
+
+**Confidence: 75**
+
+**Reasoning:**
+- **Moat Analysis:** Microsoft's strong competitive advantages include high switching costs for its software products and significant intellectual property in areas like cloud computing (Azure) and productivity tools (Office). These factors create durable moats, as competitors face substantial barriers to entry.
+  
+- **ROIC and Pricing Power:** With an ROIC of over 15%, Microsoft demonstrates efficient use of capital. Its pricing power is evident from consistently improving gross margins, indicating strong demand for its products and services.
+
+- **Predictability and Consistency:** The company's revenue growth, operating income, and cash flow are highly predictable, with minimal volatility in margins and consistent positive free cash flow.
+
+- **Management Integrity:** Microsoft exhibits prudent financial management with low debt levels, stable share count, and no insider transactions reported. This suggests a commitment to shareholder value.
+
+- **Long-Term Growth:** Investments in R&D position Microsoft for future growth, particularly in cloud services, which is a rapidly growing sector.
+
+**Avoidance of Stupidity:**
+- While the company's fundamentals are strong, the lack of sufficient valuation data introduces uncertainty. Potential risks include market saturation in certain segments and ongoing competition in cloud computing.
+
+In conclusion, Microsoft's strong moats, predictable operations, and strategic investments make it an attractive long-term investment despite some uncertainties.
+For troubleshooting, visit: https://python.langchain.com/docs/troubleshooting/errors/OUTPUT_PARSING_FAILURE 
+LLM Error with Ollama deepseek-r1:14b by charlie_munger_agent: Invalid json output: **Signal: Bullish**
+
+**Confidence: 85%**
+
+**Reasoning:**
+- **Moat Analysis:** Microsoft's competitive advantage is robust due to its intellectual property in software, high switching costs for customers, and strong market position in cloud computing (Azure) and productivity tools (Office). This creates a durable moat against competitors.
+- **ROIC and Pricing Power:** With an ROIC of over 15%, Microsoft demonstrates efficient capital use. Consistently improving gross margins highlight strong pricing power, allowing the company to maintain profitability despite competitive pressures.
+- **Predictability and Operations:** The company's revenue growth is steady, and its operations are highly predictable with consistent positive operating income and free cash flow. This predictability aligns with Munger's emphasis on reliable businesses.
+- **Management Integrity:** Microsoft exhibits responsible capital allocation with conservative debt management, prudent cash handling, and limited share dilution. No insider transactions further indicate management's alignment with shareholders' interests.
+- **Long-term Focus:** Significant R&D investment suggests a focus on future growth through innovation in cloud services and AI, positioning the company well for technological advancements.
+
+**Avoidance Factors:**
+- While valuation data is insufficient, there are no immediate red flags like declining margins or excessive leverage. The risks are minimal given the current stable operations and strong fundamentals.
+
+In conclusion, Microsoft's combination of a wide moat, high returns on capital, predictable operations, and shareholder-friendly management makes it an attractive investment opportunity.
+For troubleshooting, visit: https://python.langchain.com/docs/troubleshooting/errors/OUTPUT_PARSING_FAILURE 
+LLM Error with Ollama deepseek-r1:14b by charlie_munger_agent: Invalid json output: **Signal: Bullish**
+
+**Confidence: 85%**
+
+**Reasoning:**
+- **Moat Analysis:** Microsoft's competitive advantage is robust due to its intellectual property in software, high switching costs for customers, and strong market position in cloud computing (Azure) and productivity tools (Office). This creates a durable moat against competitors.
+- **ROIC and Pricing Power:** With an ROIC of over 15%, Microsoft demonstrates efficient capital use. Consistently improving gross margins highlight strong pricing power, allowing the company to maintain profitability despite competitive pressures.
+- **Predictability and Operations:** The company's revenue growth is steady, and its operations are highly predictable with consistent positive operating income and free cash flow. This predictability aligns with Munger's emphasis on reliable businesses.
+- **Management Integrity:** Microsoft exhibits responsible capital allocation with conservative debt management, prudent cash handling, and limited share dilution. No insider transactions further indicate management's alignment with shareholders' interests.
+- **Long-term Focus:** Significant R&D investment suggests a focus on future growth through innovation in cloud services and AI, positioning the company well for technological advancements.
+
+**Avoidance Factors:**
+- While valuation data is insufficient, there are no immediate red flags like declining margins or excessive leverage. The risks are minimal given the current stable operations and strong fundamentals.
+
+In conclusion, Microsoft's combination of a wide moat, high returns on capital, predictable operations, and shareholder-friendly management makes it an attractive investment opportunity.
+For troubleshooting, visit: https://python.langchain.com/docs/troubleshooting/errors/OUTPUT_PARSING_FAILURE 
+Error in LLM call after 3 attempts: Invalid json output: **Signal: Bullish**
+
+**Confidence: 85%**
+
+**Reasoning:**
+- **Moat Analysis:** Microsoft's competitive advantage is robust due to its intellectual property in software, high switching costs for customers, and strong market position in cloud computing (Azure) and productivity tools (Office). This creates a durable moat against competitors.
+- **ROIC and Pricing Power:** With an ROIC of over 15%, Microsoft demonstrates efficient capital use. Consistently improving gross margins highlight strong pricing power, allowing the company to maintain profitability despite competitive pressures.
+- **Predictability and Operations:** The company's revenue growth is steady, and its operations are highly predictable with consistent positive operating income and free cash flow. This predictability aligns with Munger's emphasis on reliable businesses.
+- **Management Integrity:** Microsoft exhibits responsible capital allocation with conservative debt management, prudent cash handling, and limited share dilution. No insider transactions further indicate management's alignment with shareholders' interests.
+- **Long-term Focus:** Significant R&D investment suggests a focus on future growth through innovation in cloud services and AI, positioning the company well for technological advancements.
+
+**Avoidance Factors:**
+- While valuation data is insufficient, there are no immediate red flags like declining margins or excessive leverage. The risks are minimal given the current stable operations and strong fundamentals.
+
+In conclusion, Microsoft's combination of a wide moat, high returns on capital, predictable operations, and shareholder-friendly management makes it an attractive investment opportunity.
+For troubleshooting, visit: https://python.langchain.com/docs/troubleshooting/errors/OUTPUT_PARSING_FAILURE 
+
+All analyst signals:
+{
+  "technical_analyst_agent": {
+    "AAPL": {
+      "signal": "bullish",
+      "confidence": 22,
+      "strategy_signals": {
+        "trend_following": {
+          "signal": "neutral",
+          "confidence": 50,
+          "metrics": {
+            "adx": 30.383438028581335,
+            "trend_strength": 0.30383438028581333,
+            "ema_8": 297.6121966670887,
+            "ema_21": 298.4410340042274,
+            "ema_55": 289.0557555841222,
+            "di_plus": 14.714247094620855,
+            "di_minus": 15.597536677550783
+          }
+        },
+        "mean_reversion": {
+          "signal": "neutral",
+          "confidence": 50,
+          "metrics": {
+            "z_score": 0.5421550875522975,
+            "price_vs_bb": 0.33130042551611527,
+            "rsi_14": 39.06955033452622,
+            "rsi_28": 52.541454427224444,
+            "bb_upper": 319.3652344073998,
+            "bb_lower": 287.4297655926003
+          }
+        },
+        "momentum": {
+          "signal": "bullish",
+          "confidence": 42,
+          "metrics": {
+            "momentum_1m": -0.014028122415219224,
+            "momentum_3m": 0.20170168151941592,
+            "momentum_6m": 0.09626986462625076,
+            "volume_momentum": 1.6524118981649665,
+            "current_volume": 85962201.0,
+            "volume_ma_21": 52022259.76190476
+          }
+        },
+        "volatility": {
+          "signal": "neutral",
+          "confidence": 50,
+          "metrics": {
+            "historical_volatility": 0.24503508622099568,
+            "volatility_regime": 1.1169698957475394,
+            "volatility_z_score": 0.8636436454268557,
+            "atr_ratio": 0.02739361574635559,
+            "atr": 8.16357142857143
+          }
+        },
+        "statistical_arbitrage": {
+          "signal": "neutral",
+          "confidence": 50,
+          "metrics": {
+            "hurst_exponent": 0.5320342539045797,
+            "stat_arb_score": -0.0640685078091594,
+            "skewness": -0.09771018035964638,
+            "kurtosis": -0.01685017603818838
+          }
+        }
+      }
+    },
+    "MSFT": {
+      "signal": "bearish",
+      "confidence": 62,
+      "strategy_signals": {
+        "trend_following": {
+          "signal": "bearish",
+          "confidence": 34,
+          "metrics": {
+            "adx": 33.53750771875054,
+            "trend_strength": 0.3353750771875054,
+            "ema_8": 392.9080373707393,
+            "ema_21": 405.5527144612967,
+            "ema_55": 410.33809228533664,
+            "di_plus": 17.357187306608658,
+            "di_minus": 48.049317089474634
+          }
+        },
+        "mean_reversion": {
+          "signal": "neutral",
+          "confidence": 50,
+          "metrics": {
+            "z_score": -1.8709031757569452,
+            "price_vs_bb": 0.1195789602638221,
+            "rsi_14": 18.554687499999986,
+            "rsi_28": 40.915564598168864,
+            "bb_upper": 457.5052737780812,
+            "bb_lower": 368.79172622191896
+          }
+        },
+        "momentum": {
+          "signal": "bearish",
+          "confidence": 51,
+          "metrics": {
+            "momentum_1m": -0.09894076853655065,
+            "momentum_3m": -0.006468169796003953,
+            "momentum_6m": -0.20314206502562382,
+            "volume_momentum": 1.5542116686847023,
+            "current_volume": 59714157.0,
+            "volume_ma_21": 38420865.190476194
+          }
+        },
+        "volatility": {
+          "signal": "bearish",
+          "confidence": 51,
+          "metrics": {
+            "historical_volatility": 0.37629034757090957,
+            "volatility_regime": 1.284987912382381,
+            "volatility_z_score": 1.5160146169443012,
+            "atr_ratio": 0.03304653964906997,
+            "atr": 12.537857142857145
+          }
+        },
+        "statistical_arbitrage": {
+          "signal": "neutral",
+          "confidence": 50,
+          "metrics": {
+            "hurst_exponent": 0.5999614504822636,
+            "stat_arb_score": -0.19992290096452714,
+            "skewness": 0.24551610538420823,
+            "kurtosis": 0.18003088916591511
+          }
+        }
+      }
+    },
+    "NVDA": {
+      "signal": "bullish",
+      "confidence": 27,
+      "strategy_signals": {
+        "trend_following": {
+          "signal": "neutral",
+          "confidence": 50,
+          "metrics": {
+            "adx": 18.763930416973373,
+            "trend_strength": 0.18763930416973373,
+            "ema_8": 208.37218888927924,
+            "ema_21": 210.38605206737424,
+            "ema_55": 206.07731571980028,
+            "di_plus": 19.155107649867826,
+            "di_minus": 23.169752922190995
+          }
+        },
+        "mean_reversion": {
+          "signal": "neutral",
+          "confidence": 50,
+          "metrics": {
+            "z_score": 0.12806902529132128,
+            "price_vs_bb": 0.4570274174645217,
+            "rsi_14": 49.71127935326576,
+            "rsi_28": 48.29283064577183,
+            "bb_upper": 224.6457173906245,
+            "bb_lower": 198.94328260937544
+          }
+        },
+        "momentum": {
+          "signal": "bullish",
+          "confidence": 56,
+          "metrics": {
+            "momentum_1m": -0.05718888441401526,
+            "momentum_3m": 0.21997683844817617,
+            "momentum_6m": 0.23253773253773247,
+            "volume_momentum": 1.3700465701190956,
+            "current_volume": 241272013.0,
+            "volume_ma_21": 176104972.0952381
+          }
+        },
+        "volatility": {
+          "signal": "neutral",
+          "confidence": 50,
+          "metrics": {
+            "historical_volatility": 0.444372061645137,
+            "volatility_regime": 1.1535920503730392,
+            "volatility_z_score": 1.3179309091308757,
+            "atr_ratio": 0.040319901276757324,
+            "atr": 8.495000000000001
+          }
+        },
+        "statistical_arbitrage": {
+          "signal": "neutral",
+          "confidence": 50,
+          "metrics": {
+            "hurst_exponent": 0.5181689485565737,
+            "stat_arb_score": -0.03633789711314739,
+            "skewness": 0.007138127810100935,
+            "kurtosis": 0.09945126860070534
+          }
+        }
+      }
+    }
+  },
+  "fundamentals_agent": {
+    "AAPL": {
+      "signal": "neutral",
+      "confidence": 25.0,
+      "reasoning": {
+        "profitability_signal": {
+          "signal": "bullish",
+          "details": "ROE: 146.70%, Net Margin: 27.20%, Op Margin: 32.71%"
+        },
+        "growth_signal": {
+          "signal": "neutral",
+          "details": "Revenue Growth: 3.63%, Earnings Growth: 4.07%"
+        },
+        "financial_health_signal": {
+          "signal": "neutral",
+          "details": "Current Ratio: 1.07, D/E: 0.80"
+        },
+        "valuation_signal": {
+          "signal": "bearish",
+          "details": "P/E: 29.80, P/B: 34.30, P/S: 8.09"
+        }
+      },
+      "detail": {
+        "profitability": {
+          "return_on_equity": 1.467,
+          "net_margin": 0.272,
+          "operating_margin": 0.3271,
+          "score": 3,
+          "signal": "bullish"
+        },
+        "growth": {
+          "revenue_growth": 0.0363,
+          "earnings_growth": 0.0407,
+          "book_value_growth": 0.2075,
+          "score": 1,
+          "signal": "neutral"
+        },
+        "financial_health": {
+          "current_ratio": 1.07,
+          "debt_to_equity": 0.7954756740006198,
+          "free_cash_flow_per_share": 8.8,
+          "earnings_per_share": 8.35,
+          "score": 1,
+          "signal": "neutral"
+        },
+        "valuation": {
+          "pe_ratio": 29.8,
+          "pb_ratio": 34.3,
+          "ps_ratio": 8.09,
+          "score": 3,
+          "signal": "bearish"
+        }
+      }
+    },
+    "MSFT": {
+      "signal": "bearish",
+      "confidence": 50.0,
+      "reasoning": {
+        "profitability_signal": {
+          "signal": "bullish",
+          "details": "ROE: 33.10%, Net Margin: 39.30%, Op Margin: 49.43%"
+        },
+        "growth_signal": {
+          "signal": "bearish",
+          "details": "Revenue Growth: 4.20%, Earnings Growth: 4.99%"
+        },
+        "financial_health_signal": {
+          "signal": "neutral",
+          "details": "Current Ratio: 1.28, D/E: 0.14"
+        },
+        "valuation_signal": {
+          "signal": "bearish",
+          "details": "P/E: 21.95, P/B: 6.63, P/S: 8.64"
+        }
+      },
+      "detail": {
+        "profitability": {
+          "return_on_equity": 0.331,
+          "net_margin": 0.393,
+          "operating_margin": 0.4943,
+          "score": 3,
+          "signal": "bullish"
+        },
+        "growth": {
+          "revenue_growth": 0.042,
+          "earnings_growth": 0.0499,
+          "book_value_growth": 0.0601,
+          "score": 0,
+          "signal": "bearish"
+        },
+        "financial_health": {
+          "current_ratio": 1.28,
+          "debt_to_equity": 0.137474750643753,
+          "free_cash_flow_per_share": 9.82,
+          "earnings_per_share": 16.86,
+          "score": 1,
+          "signal": "neutral"
+        },
+        "valuation": {
+          "pe_ratio": 21.95,
+          "pb_ratio": 6.63,
+          "ps_ratio": 8.64,
+          "score": 2,
+          "signal": "bearish"
+        }
+      }
+    },
+    "NVDA": {
+      "signal": "bullish",
+      "confidence": 75.0,
+      "reasoning": {
+        "profitability_signal": {
+          "signal": "bullish",
+          "details": "ROE: 104.40%, Net Margin: 55.60%, Op Margin: 65.62%"
+        },
+        "growth_signal": {
+          "signal": "bullish",
+          "details": "Revenue Growth: 15.39%, Earnings Growth: 21.04%"
+        },
+        "financial_health_signal": {
+          "signal": "bullish",
+          "details": "Current Ratio: 3.91, D/E: 0.07"
+        },
+        "valuation_signal": {
+          "signal": "bearish",
+          "details": "P/E: 37.98, P/B: 28.99, P/S: 21.12"
+        }
+      },
+      "detail": {
+        "profitability": {
+          "return_on_equity": 1.044,
+          "net_margin": 0.556,
+          "operating_margin": 0.6562,
+          "score": 3,
+          "signal": "bullish"
+        },
+        "growth": {
+          "revenue_growth": 0.1539,
+          "earnings_growth": 0.2104,
+          "book_value_growth": 0.3229,
+          "score": 3,
+          "signal": "bullish"
+        },
+        "financial_health": {
+          "current_ratio": 3.91,
+          "debt_to_equity": 0.07018748450344262,
+          "free_cash_flow_per_share": 3.97,
+          "earnings_per_share": 4.94,
+          "score": 3,
+          "signal": "bullish"
+        },
+        "valuation": {
+          "pe_ratio": 37.98,
+          "pb_ratio": 28.99,
+          "ps_ratio": 21.12,
+          "score": 3,
+          "signal": "bearish"
+        }
+      }
+    }
+  },
+  "sentiment_agent": {
+    "AAPL": {
+      "signal": "bullish",
+      "confidence": 48.0,
+      "detail": {
+        "insider_total": 239,
+        "insider_bullish": 117,
+        "insider_bearish": 122,
+        "insider_value_total": 31851336.440000057,
+        "insider_value_bullish": 619353590.44,
+        "insider_value_bearish": -587502254.0,
+        "insider_weight": 0.3,
+        "news_total": 100,
+        "news_bullish": 47,
+        "news_bearish": 10,
+        "news_neutral": 43,
+        "news_weight": 0.7,
+        "weighted_bullish": 68.0,
+        "weighted_bearish": 43.6,
+        "biz_date": "2026-06-19"
+      }
+    },
+    "MSFT": {
+      "signal": "bullish",
+      "confidence": 63.0,
+      "detail": {
+        "insider_total": 435,
+        "insider_bullish": 303,
+        "insider_bearish": 132,
+        "insider_value_total": -158514267.91,
+        "insider_value_bullish": 258236437.09,
+        "insider_value_bearish": -416750705.0,
+        "insider_weight": 0.3,
+        "news_total": 100,
+        "news_bullish": 50,
+        "news_bearish": 8,
+        "news_neutral": 42,
+        "news_weight": 0.7,
+        "weighted_bullish": 125.89999999999999,
+        "weighted_bearish": 45.2,
+        "biz_date": "2026-06-19"
+      }
+    },
+    "NVDA": {
+      "signal": "bearish",
+      "confidence": 47.0,
+      "detail": {
+        "insider_total": 285,
+        "insider_bullish": 52,
+        "insider_bearish": 233,
+        "insider_value_total": -2842757211.95,
+        "insider_value_bullish": 464596228.05,
+        "insider_value_bearish": -3307353440.0,
+        "insider_weight": 0.3,
+        "news_total": 100,
+        "news_bullish": 59,
+        "news_bearish": 5,
+        "news_neutral": 36,
+        "news_weight": 0.7,
+        "weighted_bullish": 56.9,
+        "weighted_bearish": 73.39999999999999,
+        "biz_date": "2026-06-19"
+      }
+    }
+  },
+  "valuation_agent": {},
+  "warren_buffett_agent": {
+    "AAPL": {
+      "signal": "neutral",
+      "confidence": 70.0,
+      "reasoning": "While Apple demonstrates a strong economic moat through consistent margins and ROE, the lack of a margin of safety due to its high valuation and concerns about financial leverage weigh against investment. The company's management practices are shareholder-friendly, but the overvaluation is significant."
+    },
+    "MSFT": {
+      "signal": "bullish",
+      "confidence": 75.0,
+      "reasoning": "Microsoft (MSFT) aligns well with Warren Buffett's investing principles. It has a strong economic moat with consistent high operating margins and ROE, indicating durable competitive advantages. The company demonstrates conservative financial strength with low debt levels and strong returns on equity. Management is shareholder-oriented, as evidenced by dividend payments and consistent earnings growth. MSFT operates within my circle of competence, particularly in cloud computing and software. While the margin of safety isn't significant due to its current valuation, the long-term horizon suggests sustained value creation. Compared to Apple (AAPL), MSFT has a lower P/E ratio (21.95 vs. 29.8), suggesting potential undervaluation."
+    },
+    "NVDA": {
+      "signal": "neutral",
+      "confidence": 75.0,
+      "reasoning": "NVDA exhibits strong financial health with consistent earnings growth and robust margins, indicative of a durable competitive advantage. However, its current valuation appears elevated relative to its intrinsic value, lacking a sufficient margin of safety. While the company's economic moat and management quality are commendable, the absence of a significant discount to intrinsic value tempers enthusiasm."
+    }
+  },
+  "cathie_wood_agent": {
+    "AAPL": {
+      "signal": "neutral",
+      "confidence": 60.0,
+      "reasoning": "While Apple demonstrates moderate revenue growth and strong cash flow, their R&D investment is relatively modest at 8.9% of revenue, which is lower than what Cathie Wood typically seeks in high-growth tech companies. The company's innovation pipeline lacks the disruptive potential seen in other future-facing sectors, and while they have a large TAM, their growth trajectory appears less exponential compared to more innovative peers. The valuation remains unclear, adding uncertainty."
+    },
+    "MSFT": {
+      "signal": "neutral",
+      "confidence": 50.0,
+      "reasoning": "Microsoft (MSFT) demonstrates moderate innovation and R&D investment with strong free cash flow and improving operating margins. While they operate in a future-facing sector with high growth potential, particularly in cloud computing, their disruptive technology is not as cutting-edge as other companies. The valuation data is insufficient, adding uncertainty. Overall, MSFT shows steady performance but lacks the exponential growth trajectory and significant market disruption Cathie Wood typically seeks."
+    },
+    "NVDA": {
+      "signal": "neutral",
+      "confidence": 60.0,
+      "reasoning": "While NVDA exhibits strong revenue growth acceleration and impressive gross margins, there is insufficient data on operating leverage to fully assess its efficiency. The company's R&D investment, while growing significantly, is moderate at 8.6%, which may not meet the higher thresholds Cathie Wood often targets. Although NVDA's focus on AI chips presents a large TAM and strong innovation potential, the lack of valuation data and clearer evidence of exponential growth trajectory leads to a neutral stance."
+    }
+  },
+  "ben_graham_agent": {
+    "AAPL": {
+      "signal": "bearish",
+      "confidence": 65.0,
+      "reasoning": "The analysis indicates insufficient data for valuation, which is critical for Graham's approach. The current ratio of 1.07 is below Graham's preferred threshold of 2.0, suggesting potential liquidity issues. While Apple has positive and growing EPS and a dividend history, the lack of clear valuation metrics and high debt ratio make it less attractive under Graham's conservative criteria."
+    },
+    "MSFT": {
+      "signal": "neutral",
+      "confidence": 50.0,
+      "reasoning": "While Microsoft (MSFT) demonstrates positive earnings growth and a conservative debt ratio, the lack of sufficient valuation data prevents a definitive assessment. The current ratio of 1.28 is below Graham's preferred threshold of 2.0, indicating weaker liquidity. Without concrete valuation metrics like the Graham Number or net current asset value, it is challenging to determine if MSFT offers a margin of safety. Additionally, while dividend payments are consistent, the absence of specific dividend yield data limits further analysis."
+    },
+    "NVDA": {
+      "signal": "bullish",
+      "confidence": 75.0,
+      "reasoning": "While NVDA exhibits strong financial health with a current ratio of 3.91 and a debt ratio of 0.24, which are within Graham's preferred thresholds, the lack of sufficient valuation data prevents a definitive margin of safety assessment. The company's consistent earnings growth and dividend history provide stability, but the absence of specific metrics like the Graham Number or P/E ratio introduces uncertainty."
+    }
+  },
+  "stanley_druckenmiller_agent": {
+    "AAPL": {
+      "signal": "bullish",
+      "confidence": 75.0,
+      "reasoning": "AAPL exhibits solid growth momentum with a 12.8% revenue increase and 28.7% EPS growth, alongside strong price momentum of 48.3%. Sentiment is positive, supported by insider buying (38 buys vs. 12 sells). Despite moderate debt and volatility, the risk-reward profile remains favorable given AAPL's growth prospects and market leadership."
+    },
+    "MSFT": {
+      "signal": "neutral",
+      "confidence": 60.0,
+      "reasoning": "MSFT exhibits moderate revenue and EPS growth but struggles with negative price momentum. While it has a strong balance sheet and heavy insider buying, the lack of positive sentiment and insufficient valuation data temper enthusiasm. The risk-reward profile isn't sufficiently favorable for a bullish stance."
+    },
+    "NVDA": {
+      "signal": "bullish",
+      "confidence": 75.0,
+      "reasoning": "NVDA exhibits exceptional revenue and EPS growth at 65.5% and 66.0% YoY, respectively, signaling strong momentum despite moderate price appreciation of 46.5%. Sentiment remains positive with mostly neutral/positive headlines, supported by moderate insider buying (27 buys vs. 23 sells). The risk-reward profile is favorable with a low debt-to-equity ratio of 0.07 and high growth potential. While valuation data is insufficient, the company's rapid expansion justifies premium valuations."
+    }
+  },
+  "charlie_munger_agent": {
+    "AAPL": {
+      "signal": "neutral",
+      "confidence": 75.0,
+      "reasoning": "Apple demonstrates a strong moat with excellent ROIC and pricing power, supported by consistent cash flows and predictable operations. Management shows competence through efficient cash management and shareholder-friendly actions like reducing share count. However, the lack of sufficient valuation data makes it difficult to determine if the price is fair. Inverting the problem, while there are no obvious red flags, the unknown valuation introduces uncertainty."
+    },
+    "MSFT": {
+      "signal": "neutral",
+      "confidence": 0.0,
+      "reasoning": "Error in analysis, defaulting to neutral"
+    },
+    "NVDA": {
+      "signal": "neutral",
+      "confidence": 75.0,
+      "reasoning": "NVDA exhibits strong moats with excellent ROIC and high gross margins, indicating robust pricing power. Management demonstrates prudent financial practices with low debt levels and stable share management. The company's operations are highly predictable with consistent cash flows and positive operating income. However, the lack of valuation data and potential risks in the rapidly evolving tech sector, particularly AI market saturation, lead to a neutral stance."
+    }
+  }
+}
+ OK Ben Graham          [NVDA] Done                                            
+ OK Cathie Wood         [NVDA] Done                                            
+ OK Charlie Munger      [NVDA] Done                                            
+ OK Fundamentals        [NVDA] Done                                            
+ OK Sentiment           [NVDA] Done                                            
+ OK Stanley Druckenmiller[NVDA] Done                                           
+ OK Technical Analyst   [NVDA] Done                                            
+ .. Valuation           [NVDA] Failed: Market cap unavailable                  
+ OK Warren Buffett      [NVDA] Done                                            2026-06-19 19:05:16,258 - INFO - Command completed successfully in 281.87 seconds
+2026-06-19 19:05:16,258 - INFO - Running job 8/10
+2026-06-19 19:05:16,258 - INFO - Starting command: poetry run python src/upload/sophie_analysis_table_uploader.py --tickers AAPL,MSFT,NVDA
+Analysis data for AAPL:
+{
+  "valuation": {
+    "valuations": [
+      {
+        "valuation_method": "dcf",
+        "intrinsic_value": 1988034470687.5347,
+        "market_cap": 3884336021200.0,
+        "gap": -0.4882,
+        "signal": "bearish"
+      },
+      {
+        "valuation_method": "ev_ebitda",
+        "intrinsic_value": 3855529541751.4175,
+        "market_cap": 3884336021200.0,
+        "gap": -0.0074,
+        "signal": "neutral"
+      },
+      {
+        "valuation_method": "owner_earnings",
+        "intrinsic_value": 898899842935.0168,
+        "market_cap": 3884336021200.0,
+        "gap": -0.7686,
+        "signal": "bearish"
+      },
+      {
+        "valuation_method": "residual_income",
+        "intrinsic_value": 2898909452892.6406,
+        "market_cap": 3884336021200.0,
+        "gap": -0.2537,
+        "signal": "bearish"
+      },
+      {
+        "valuation_method": "weighted",
+        "intrinsic_value": 2071423863407.4407,
+        "market_cap": 3884336021200.0,
+        "gap": -0.4667,
+        "signal": "bearish"
+      }
+    ]
+  },
+  "technicals": {
+    "composite_signal": "bullish",
+    "composite_confidence": 22.0,
+    "strategies": [
+      {
+        "strategy": "trend",
+        "signal": "neutral",
+        "confidence": 50.0
+      },
+      {
+        "strategy": "mean_reversion",
+        "signal": "neutral",
+        "confidence": 50.0
+      },
+      {
+        "strategy": "momentum",
+        "signal": "bullish",
+        "confidence": 42.0
+      },
+      {
+        "strategy": "volatility",
+        "signal": "neutral",
+        "confidence": 50.0
+      },
+      {
+        "strategy": "stat_arb",
+        "signal": "neutral",
+        "confidence": 50.0
+      }
+    ]
+  },
+  "sentiment": {
+    "overall_signal": "bullish",
+    "confidence": 48.0,
+    "insider_trading": {
+      "total": 239,
+      "bullish": 117,
+      "bearish": 122,
+      "total_value": 31851336.440000057,
+      "bullish_value": 619353590.44,
+      "bearish_value": -587502254.0,
+      "weight": 0.3
+    },
+    "news_sentiment": {
+      "total": 100,
+      "bullish": 47,
+      "bearish": 10,
+      "neutral": 43,
+      "weight": 0.7
+    }
+  },
+  "fundamentals": {
+    "overall_signal": "neutral",
+    "confidence": 25.0,
+    "profitability": {
+      "return_on_equity": 1.467,
+      "net_margin": 0.272,
+      "operating_margin": 0.3271,
+      "signal": "bullish"
+    },
+    "growth": {
+      "revenue_growth": 0.0363,
+      "earnings_growth": 0.0407,
+      "book_value_growth": 0.2075,
+      "signal": "neutral"
+    },
+    "financial_health": {
+      "current_ratio": 1.07,
+      "debt_to_equity": 0.7955,
+      "free_cash_flow_per_share": 8.8,
+      "signal": "neutral"
+    },
+    "valuation": {
+      "pe_ratio": 29.8,
+      "pb_ratio": 34.3,
+      "ps_ratio": 8.09,
+      "signal": "bearish"
+    }
+  }
+}
+2026-06-19 19:05:22,649 [INFO] httpx: HTTP Request: POST https://api.deepseek.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-06-19 19:05:30,518 [INFO] llm: LLM Request to DeepSeek deepseek-chat by sophie_agent
+2026-06-19 19:05:30,519 [INFO] llm: Full Prompt:
+messages=[SystemMessage(content='You are Sophie, an AI investment analyst that combines multiple analysis techniques:\n- Valuation analysis (DCF, ev_ebitda, owner_earnings, residual_income)\n- Technical analysis (trend, momentum, volatility) \n- Fundamental analysis (financial statements)\n- Sentiment analysis (news, social media)\n\nProvide an analysis with:\n1. Overall score (1-100) where:\n   - 1-20 = Strong Sell\n   - 21-40 = Sell\n   - 41-60 = Hold  \n   - 61-80 = Buy\n   - 81-100 = Strong Buy\n2. Confidence level (0-100%)\n3. Time horizon specific insights (short/medium/long term)\n4. Key bullish factors\n5. Key bearish factors\n6. Potential risks to the analysis\n\nReturn analysis in this JSON format:\n{\n  "signal": "bullish"|"bearish"|"neutral",\n  "confidence": 0-100,\n  "overall_score": 1-100,\n  "reasoning": "Analysis rationale",\n  "time_horizon_analysis": {\n    "short_term": "1-3 month outlook",\n    "medium_term": "3-12 month outlook", \n    "long_term": "1+ year outlook"\n  },\n  "bullish_factors": ["list", "of", "factors"],\n  "bearish_factors": ["list", "of", "factors"],\n  "risks": ["potential", "risks", "to", "analysis"]\n}', additional_kwargs={}, response_metadata={}), HumanMessage(content='Analyze AAPL based on this data:\n{\n  "valuation": {\n    "valuations": [\n      {\n        "valuation_method": "dcf",\n        "intrinsic_value": 1988034470687.5347,\n        "market_cap": 3884336021200.0,\n        "gap": -0.4882,\n        "signal": "bearish"\n      },\n      {\n        "valuation_method": "ev_ebitda",\n        "intrinsic_value": 3855529541751.4175,\n        "market_cap": 3884336021200.0,\n        "gap": -0.0074,\n        "signal": "neutral"\n      },\n      {\n        "valuation_method": "owner_earnings",\n        "intrinsic_value": 898899842935.0168,\n        "market_cap": 3884336021200.0,\n        "gap": -0.7686,\n        "signal": "bearish"\n      },\n      {\n        "valuation_method": "residual_income",\n        "intrinsic_value": 2898909452892.6406,\n        "market_cap": 3884336021200.0,\n        "gap": -0.2537,\n        "signal": "bearish"\n      },\n      {\n        "valuation_method": "weighted",\n        "intrinsic_value": 2071423863407.4407,\n        "market_cap": 3884336021200.0,\n        "gap": -0.4667,\n        "signal": "bearish"\n      }\n    ]\n  },\n  "technicals": {\n    "composite_signal": "bullish",\n    "composite_confidence": 22.0,\n    "strategies": [\n      {\n        "strategy": "trend",\n        "signal": "neutral",\n        "confidence": 50.0\n      },\n      {\n        "strategy": "mean_reversion",\n        "signal": "neutral",\n        "confidence": 50.0\n      },\n      {\n        "strategy": "momentum",\n        "signal": "bullish",\n        "confidence": 42.0\n      },\n      {\n        "strategy": "volatility",\n        "signal": "neutral",\n        "confidence": 50.0\n      },\n      {\n        "strategy": "stat_arb",\n        "signal": "neutral",\n        "confidence": 50.0\n      }\n    ]\n  },\n  "sentiment": {\n    "overall_signal": "bullish",\n    "confidence": 48.0,\n    "insider_trading": {\n      "total": 239,\n      "bullish": 117,\n      "bearish": 122,\n      "total_value": 31851336.440000057,\n      "bullish_value": 619353590.44,\n      "bearish_value": -587502254.0,\n      "weight": 0.3\n    },\n    "news_sentiment": {\n      "total": 100,\n      "bullish": 47,\n      "bearish": 10,\n      "neutral": 43,\n      "weight": 0.7\n    }\n  },\n  "fundamentals": {\n    "overall_signal": "neutral",\n    "confidence": 25.0,\n    "profitability": {\n      "return_on_equity": 1.467,\n      "net_margin": 0.272,\n      "operating_margin": 0.3271,\n      "signal": "bullish"\n    },\n    "growth": {\n      "revenue_growth": 0.0363,\n      "earnings_growth": 0.0407,\n      "book_value_growth": 0.2075,\n      "signal": "neutral"\n    },\n    "financial_health": {\n      "current_ratio": 1.07,\n      "debt_to_equity": 0.7955,\n      "free_cash_flow_per_share": 8.8,\n      "signal": "neutral"\n    },\n    "valuation": {\n      "pe_ratio": 29.8,\n      "pb_ratio": 34.3,\n      "ps_ratio": 8.09,\n      "signal": "bearish"\n    }\n  }\n}', additional_kwargs={}, response_metadata={})]
+
+Analysis data for MSFT:
+{
+  "valuation": {
+    "valuations": [
+      {
+        "valuation_method": "dcf",
+        "intrinsic_value": 1770462089079.3926,
+        "market_cap": 2949682637859.48,
+        "gap": -0.3998,
+        "signal": "bearish"
+      },
+      {
+        "valuation_method": "ev_ebitda",
+        "intrinsic_value": 4394305138646.409,
+        "market_cap": 2949682637859.48,
+        "gap": 0.4898,
+        "signal": "bullish"
+      },
+      {
+        "valuation_method": "owner_earnings",
+        "intrinsic_value": 2409712508713.8325,
+        "market_cap": 2949682637859.48,
+        "gap": -0.1831,
+        "signal": "bearish"
+      },
+      {
+        "valuation_method": "residual_income",
+        "intrinsic_value": 1499534421647.1785,
+        "market_cap": 2949682637859.48,
+        "gap": -0.4916,
+        "signal": "bearish"
+      },
+      {
+        "valuation_method": "weighted",
+        "intrinsic_value": 2491875579121.6284,
+        "market_cap": 2949682637859.48,
+        "gap": -0.1552,
+        "signal": "bearish"
+      }
+    ]
+  },
+  "technicals": {
+    "composite_signal": "bearish",
+    "composite_confidence": 62.0,
+    "strategies": [
+      {
+        "strategy": "trend",
+        "signal": "bearish",
+        "confidence": 34.0
+      },
+      {
+        "strategy": "mean_reversion",
+        "signal": "neutral",
+        "confidence": 50.0
+      },
+      {
+        "strategy": "momentum",
+        "signal": "bearish",
+        "confidence": 51.0
+      },
+      {
+        "strategy": "volatility",
+        "signal": "bearish",
+        "confidence": 51.0
+      },
+      {
+        "strategy": "stat_arb",
+        "signal": "neutral",
+        "confidence": 50.0
+      }
+    ]
+  },
+  "sentiment": {
+    "overall_signal": "bullish",
+    "confidence": 63.0,
+    "insider_trading": {
+      "total": 435,
+      "bullish": 303,
+      "bearish": 132,
+      "total_value": -158514267.91,
+      "bullish_value": 258236437.09,
+      "bearish_value": -416750705.0,
+      "weight": 0.3
+    },
+    "news_sentiment": {
+      "total": 100,
+      "bullish": 50,
+      "bearish": 8,
+      "neutral": 42,
+      "weight": 0.7
+    }
+  },
+  "fundamentals": {
+    "overall_signal": "bearish",
+    "confidence": 50.0,
+    "profitability": {
+      "return_on_equity": 0.331,
+      "net_margin": 0.393,
+      "operating_margin": 0.4943,
+      "signal": "bullish"
+    },
+    "growth": {
+      "revenue_growth": 0.042,
+      "earnings_growth": 0.0499,
+      "book_value_growth": 0.0601,
+      "signal": "bearish"
+    },
+    "financial_health": {
+      "current_ratio": 1.28,
+      "debt_to_equity": 0.1375,
+      "free_cash_flow_per_share": 9.82,
+      "signal": "neutral"
+    },
+    "valuation": {
+      "pe_ratio": 21.95,
+      "pb_ratio": 6.63,
+      "ps_ratio": 8.64,
+      "signal": "bearish"
+    }
+  }
+}
+2026-06-19 19:05:31,720 [INFO] httpx: HTTP Request: POST https://api.deepseek.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-06-19 19:05:38,284 [INFO] httpx: HTTP Request: POST https://api.deepseek.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-06-19 19:05:45,823 [INFO] llm: LLM Request to DeepSeek deepseek-chat by sophie_agent
+2026-06-19 19:05:45,823 [INFO] llm: Full Prompt:
+messages=[SystemMessage(content='You are Sophie, an AI investment analyst that combines multiple analysis techniques:\n- Valuation analysis (DCF, ev_ebitda, owner_earnings, residual_income)\n- Technical analysis (trend, momentum, volatility) \n- Fundamental analysis (financial statements)\n- Sentiment analysis (news, social media)\n\nProvide an analysis with:\n1. Overall score (1-100) where:\n   - 1-20 = Strong Sell\n   - 21-40 = Sell\n   - 41-60 = Hold  \n   - 61-80 = Buy\n   - 81-100 = Strong Buy\n2. Confidence level (0-100%)\n3. Time horizon specific insights (short/medium/long term)\n4. Key bullish factors\n5. Key bearish factors\n6. Potential risks to the analysis\n\nReturn analysis in this JSON format:\n{\n  "signal": "bullish"|"bearish"|"neutral",\n  "confidence": 0-100,\n  "overall_score": 1-100,\n  "reasoning": "Analysis rationale",\n  "time_horizon_analysis": {\n    "short_term": "1-3 month outlook",\n    "medium_term": "3-12 month outlook", \n    "long_term": "1+ year outlook"\n  },\n  "bullish_factors": ["list", "of", "factors"],\n  "bearish_factors": ["list", "of", "factors"],\n  "risks": ["potential", "risks", "to", "analysis"]\n}', additional_kwargs={}, response_metadata={}), HumanMessage(content='Analyze MSFT based on this data:\n{\n  "valuation": {\n    "valuations": [\n      {\n        "valuation_method": "dcf",\n        "intrinsic_value": 1770462089079.3926,\n        "market_cap": 2949682637859.48,\n        "gap": -0.3998,\n        "signal": "bearish"\n      },\n      {\n        "valuation_method": "ev_ebitda",\n        "intrinsic_value": 4394305138646.409,\n        "market_cap": 2949682637859.48,\n        "gap": 0.4898,\n        "signal": "bullish"\n      },\n      {\n        "valuation_method": "owner_earnings",\n        "intrinsic_value": 2409712508713.8325,\n        "market_cap": 2949682637859.48,\n        "gap": -0.1831,\n        "signal": "bearish"\n      },\n      {\n        "valuation_method": "residual_income",\n        "intrinsic_value": 1499534421647.1785,\n        "market_cap": 2949682637859.48,\n        "gap": -0.4916,\n        "signal": "bearish"\n      },\n      {\n        "valuation_method": "weighted",\n        "intrinsic_value": 2491875579121.6284,\n        "market_cap": 2949682637859.48,\n        "gap": -0.1552,\n        "signal": "bearish"\n      }\n    ]\n  },\n  "technicals": {\n    "composite_signal": "bearish",\n    "composite_confidence": 62.0,\n    "strategies": [\n      {\n        "strategy": "trend",\n        "signal": "bearish",\n        "confidence": 34.0\n      },\n      {\n        "strategy": "mean_reversion",\n        "signal": "neutral",\n        "confidence": 50.0\n      },\n      {\n        "strategy": "momentum",\n        "signal": "bearish",\n        "confidence": 51.0\n      },\n      {\n        "strategy": "volatility",\n        "signal": "bearish",\n        "confidence": 51.0\n      },\n      {\n        "strategy": "stat_arb",\n        "signal": "neutral",\n        "confidence": 50.0\n      }\n    ]\n  },\n  "sentiment": {\n    "overall_signal": "bullish",\n    "confidence": 63.0,\n    "insider_trading": {\n      "total": 435,\n      "bullish": 303,\n      "bearish": 132,\n      "total_value": -158514267.91,\n      "bullish_value": 258236437.09,\n      "bearish_value": -416750705.0,\n      "weight": 0.3\n    },\n    "news_sentiment": {\n      "total": 100,\n      "bullish": 50,\n      "bearish": 8,\n      "neutral": 42,\n      "weight": 0.7\n    }\n  },\n  "fundamentals": {\n    "overall_signal": "bearish",\n    "confidence": 50.0,\n    "profitability": {\n      "return_on_equity": 0.331,\n      "net_margin": 0.393,\n      "operating_margin": 0.4943,\n      "signal": "bullish"\n    },\n    "growth": {\n      "revenue_growth": 0.042,\n      "earnings_growth": 0.0499,\n      "book_value_growth": 0.0601,\n      "signal": "bearish"\n    },\n    "financial_health": {\n      "current_ratio": 1.28,\n      "debt_to_equity": 0.1375,\n      "free_cash_flow_per_share": 9.82,\n      "signal": "neutral"\n    },\n    "valuation": {\n      "pe_ratio": 21.95,\n      "pb_ratio": 6.63,\n      "ps_ratio": 8.64,\n      "signal": "bearish"\n    }\n  }\n}', additional_kwargs={}, response_metadata={})]
+
+Analysis data for NVDA:
+{
+  "valuation": {
+    "valuations": [
+      {
+        "valuation_method": "dcf",
+        "intrinsic_value": 1830692487829.3115,
+        "market_cap": 4613575100000.0,
+        "gap": -0.6032,
+        "signal": "bearish"
+      },
+      {
+        "valuation_method": "ev_ebitda",
+        "intrinsic_value": 4971451216842.1045,
+        "market_cap": 4613575100000.0,
+        "gap": 0.0776,
+        "signal": "neutral"
+      },
+      {
+        "valuation_method": "owner_earnings",
+        "intrinsic_value": 953302961425.025,
+        "market_cap": 4613575100000.0,
+        "gap": -0.7934,
+        "signal": "bearish"
+      },
+      {
+        "valuation_method": "residual_income",
+        "intrinsic_value": 2273435707435.07,
+        "market_cap": 4613575100000.0,
+        "gap": -0.5072,
+        "signal": "bearish"
+      },
+      {
+        "valuation_method": "weighted",
+        "intrinsic_value": 2196032221350.9456,
+        "market_cap": 4613575100000.0,
+        "gap": -0.524,
+        "signal": "bearish"
+      }
+    ]
+  },
+  "technicals": {
+    "composite_signal": "bullish",
+    "composite_confidence": 27.0,
+    "strategies": [
+      {
+        "strategy": "trend",
+        "signal": "neutral",
+        "confidence": 50.0
+      },
+      {
+        "strategy": "mean_reversion",
+        "signal": "neutral",
+        "confidence": 50.0
+      },
+      {
+        "strategy": "momentum",
+        "signal": "bullish",
+        "confidence": 56.0
+      },
+      {
+        "strategy": "volatility",
+        "signal": "neutral",
+        "confidence": 50.0
+      },
+      {
+        "strategy": "stat_arb",
+        "signal": "neutral",
+        "confidence": 50.0
+      }
+    ]
+  },
+  "sentiment": {
+    "overall_signal": "bearish",
+    "confidence": 47.0,
+    "insider_trading": {
+      "total": 285,
+      "bullish": 52,
+      "bearish": 233,
+      "total_value": -2842757211.95,
+      "bullish_value": 464596228.05,
+      "bearish_value": -3307353440.0,
+      "weight": 0.3
+    },
+    "news_sentiment": {
+      "total": 100,
+      "bullish": 59,
+      "bearish": 5,
+      "neutral": 36,
+      "weight": 0.7
+    }
+  },
+  "fundamentals": {
+    "overall_signal": "bullish",
+    "confidence": 75.0,
+    "profitability": {
+      "return_on_equity": 1.044,
+      "net_margin": 0.556,
+      "operating_margin": 0.6562,
+      "signal": "bullish"
+    },
+    "growth": {
+      "revenue_growth": 0.1539,
+      "earnings_growth": 0.2104,
+      "book_value_growth": 0.3229,
+      "signal": "bullish"
+    },
+    "financial_health": {
+      "current_ratio": 3.91,
+      "debt_to_equity": 0.0702,
+      "free_cash_flow_per_share": 3.97,
+      "signal": "bullish"
+    },
+    "valuation": {
+      "pe_ratio": 37.98,
+      "pb_ratio": 28.99,
+      "ps_ratio": 21.12,
+      "signal": "bearish"
+    }
+  }
+}
+2026-06-19 19:05:47,044 [INFO] httpx: HTTP Request: POST https://api.deepseek.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-06-19 19:05:53,705 [INFO] httpx: HTTP Request: POST https://api.deepseek.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-06-19 19:06:02,625 [INFO] llm: LLM Request to DeepSeek deepseek-chat by sophie_agent
+2026-06-19 19:06:02,626 [INFO] llm: Full Prompt:
+messages=[SystemMessage(content='You are Sophie, an AI investment analyst that combines multiple analysis techniques:\n- Valuation analysis (DCF, ev_ebitda, owner_earnings, residual_income)\n- Technical analysis (trend, momentum, volatility) \n- Fundamental analysis (financial statements)\n- Sentiment analysis (news, social media)\n\nProvide an analysis with:\n1. Overall score (1-100) where:\n   - 1-20 = Strong Sell\n   - 21-40 = Sell\n   - 41-60 = Hold  \n   - 61-80 = Buy\n   - 81-100 = Strong Buy\n2. Confidence level (0-100%)\n3. Time horizon specific insights (short/medium/long term)\n4. Key bullish factors\n5. Key bearish factors\n6. Potential risks to the analysis\n\nReturn analysis in this JSON format:\n{\n  "signal": "bullish"|"bearish"|"neutral",\n  "confidence": 0-100,\n  "overall_score": 1-100,\n  "reasoning": "Analysis rationale",\n  "time_horizon_analysis": {\n    "short_term": "1-3 month outlook",\n    "medium_term": "3-12 month outlook", \n    "long_term": "1+ year outlook"\n  },\n  "bullish_factors": ["list", "of", "factors"],\n  "bearish_factors": ["list", "of", "factors"],\n  "risks": ["potential", "risks", "to", "analysis"]\n}', additional_kwargs={}, response_metadata={}), HumanMessage(content='Analyze NVDA based on this data:\n{\n  "valuation": {\n    "valuations": [\n      {\n        "valuation_method": "dcf",\n        "intrinsic_value": 1830692487829.3115,\n        "market_cap": 4613575100000.0,\n        "gap": -0.6032,\n        "signal": "bearish"\n      },\n      {\n        "valuation_method": "ev_ebitda",\n        "intrinsic_value": 4971451216842.1045,\n        "market_cap": 4613575100000.0,\n        "gap": 0.0776,\n        "signal": "neutral"\n      },\n      {\n        "valuation_method": "owner_earnings",\n        "intrinsic_value": 953302961425.025,\n        "market_cap": 4613575100000.0,\n        "gap": -0.7934,\n        "signal": "bearish"\n      },\n      {\n        "valuation_method": "residual_income",\n        "intrinsic_value": 2273435707435.07,\n        "market_cap": 4613575100000.0,\n        "gap": -0.5072,\n        "signal": "bearish"\n      },\n      {\n        "valuation_method": "weighted",\n        "intrinsic_value": 2196032221350.9456,\n        "market_cap": 4613575100000.0,\n        "gap": -0.524,\n        "signal": "bearish"\n      }\n    ]\n  },\n  "technicals": {\n    "composite_signal": "bullish",\n    "composite_confidence": 27.0,\n    "strategies": [\n      {\n        "strategy": "trend",\n        "signal": "neutral",\n        "confidence": 50.0\n      },\n      {\n        "strategy": "mean_reversion",\n        "signal": "neutral",\n        "confidence": 50.0\n      },\n      {\n        "strategy": "momentum",\n        "signal": "bullish",\n        "confidence": 56.0\n      },\n      {\n        "strategy": "volatility",\n        "signal": "neutral",\n        "confidence": 50.0\n      },\n      {\n        "strategy": "stat_arb",\n        "signal": "neutral",\n        "confidence": 50.0\n      }\n    ]\n  },\n  "sentiment": {\n    "overall_signal": "bearish",\n    "confidence": 47.0,\n    "insider_trading": {\n      "total": 285,\n      "bullish": 52,\n      "bearish": 233,\n      "total_value": -2842757211.95,\n      "bullish_value": 464596228.05,\n      "bearish_value": -3307353440.0,\n      "weight": 0.3\n    },\n    "news_sentiment": {\n      "total": 100,\n      "bullish": 59,\n      "bearish": 5,\n      "neutral": 36,\n      "weight": 0.7\n    }\n  },\n  "fundamentals": {\n    "overall_signal": "bullish",\n    "confidence": 75.0,\n    "profitability": {\n      "return_on_equity": 1.044,\n      "net_margin": 0.556,\n      "operating_margin": 0.6562,\n      "signal": "bullish"\n    },\n    "growth": {\n      "revenue_growth": 0.1539,\n      "earnings_growth": 0.2104,\n      "book_value_growth": 0.3229,\n      "signal": "bullish"\n    },\n    "financial_health": {\n      "current_ratio": 3.91,\n      "debt_to_equity": 0.0702,\n      "free_cash_flow_per_share": 3.97,\n      "signal": "bullish"\n    },\n    "valuation": {\n      "pe_ratio": 37.98,\n      "pb_ratio": 28.99,\n      "ps_ratio": 21.12,\n      "signal": "bearish"\n    }\n  }\n}', additional_kwargs={}, response_metadata={})]
+
+
+==========         Sophie Agent         ==========
+{
+  "AAPL": {
+    "signal": "bearish",
+    "confidence": 68.0,
+    "overall_score": 35,
+    "reasoning": "AAPL appears overvalued across multiple intrinsic valuation methods, with a DCF gap of -48.8%, owner earnings gap of -76.9%, and a weighted intrinsic value gap of -46.7%, strongly suggesting the market has priced in future growth expectations that may not materialize. The fundamentals are mixed: profitability is strong (ROE 146.7%, net margin 27.2%), but growth is modest (3.6% revenue, 4.1% earnings) and valuation multiples are stretched (P/E 29.8, P/B 34.3). The technicals are weakly bullish (composite confidence only 22%), while sentiment is neutral to bullish (48% confidence) with significant insider selling ($587M bearish value vs $619M bullish). The owner earnings signal is particularly alarming, indicating free cash flow generation may not support current market cap.",
+    "time_horizon_analysis": {
+      "short_term": "Bearish - Overvaluation and weak momentum signals suggest potential downside correction in 1-3 months, especially if earnings disappoint or interest rates remain high.",
+      "medium_term": "Neutral to Bearish - Fundamentals provide a floor, but high multiples and modest growth limit upside. Mean reversion likely as valuation gaps persist.",
+      "long_term": "Neutral - Strong brand, ecosystem lock-in, and recurring services revenue provide a moat. However, current pricing implies very high growth expectations that may be hard to sustain."
+    },
+    "bullish_factors": [
+      "Exceptional profitability with ROE of 146.7% and net margins of 27.2%",
+      "Strong free cash flow per share of $8.8 supports buybacks and dividends",
+      "Bullish momentum signal from technical analysis",
+      "High brand loyalty and ecosystem lock-in driving services revenue growth",
+      "Moderate debt-to-equity ratio of 0.80 indicates manageable leverage"
+    ],
+    "bearish_factors": [
+      "Significant overvaluation with DCF gap of -48.8% and owner earnings gap of -76.9%",
+      "Very high valuation multiples: P/E 29.8, P/B 34.3, P/S 8.09",
+      "Low growth rates: revenue growth only 3.6%, earnings growth 4.1%",
+      "Insider trading shows $587M in bearish transactions vs $619M bullish, signaling mixed management confidence",
+      "Weak technical confidence of only 22%, indicating fragile bullish momentum"
+    ],
+    "risks": [
+      "Analyst bias: The DCF model is highly sensitive to assumptions about future growth rates and discount rates; a small change could significantly alter intrinsic value",
+      "Market sentiment risk: Strong brand perception could keep stock elevated despite fundamental overvaluation, leading to prolonged underperformance rather than a sharp correction",
+      "Macroeconomic risk: Rising interest rates or recession could compress multiples and reduce demand for premium consumer electronics",
+      "Competition risk: Increasing competition in smartphones, wearables, and services from Samsung, Google, and others could erode margins and market share",
+      "Regulatory risk: Potential antitrust actions or changes in App Store policies could impact high-margin services revenue",
+      "Historical valuation anomaly: Apple's price has remained elevated despite similar gaps in the past, suggesting the market may be pricing in intangible assets not captured by traditional valuation models"
+    ]
+  },
+  "MSFT": {
+    "signal": "bearish",
+    "confidence": 62.0,
+    "overall_score": 42,
+    "reasoning": "MSFT presents a mixed picture with conflicting signals across valuation, technicals, and fundamentals, leading to a slightly bearish overall assessment. Valuation is predominantly bearish, with most models indicating the stock is trading above intrinsic value. Technicals are bearish across trend, momentum, and volatility strategies. Fundamentals offer conflicting signals, with strong profitability but weak growth and high valuation ratios. Sentiment is the only unequivocally bullish factor, driven by positive news and insider activity. The weighted average of these factors results in a low neutral/weak sell score. High valuation relative to growth and persistent technical weakness outweigh strong profitability and positive sentiment, justifying a cautious Hold stance.",
+    "time_horizon_analysis": {
+      "short_term": "Bearish technical signals (trend, momentum, volatility) suggest near-term weakness, likely leading to further price declines or sideways consolidation. High valuation and lack of strong catalysts support this cautious view.",
+      "medium_term": "The fundamentals are mixed; strong profitability and healthy financials are offset by slowing growth and high multiples. Valuation models suggest the stock is overvalued. A correction or period of underperformance is possible unless revenue/earnings growth accelerates significantly.",
+      "long_term": "Microsoft's dominant position in cloud computing and enterprise software, combined with its strong balance sheet and AI investments, provides a solid long-term foundation. However, current elevated valuations mean long-term returns may be lower than historical averages. The stock remains a core holding but with limited upside from current levels."
+    },
+    "bullish_factors": [
+      "Strong profitability with industry-leading net (39.3%) and operating margins (49.4%)",
+      "Positive sentiment from news and insider trading activity",
+      "Robust financial health with low debt-to-equity (0.14) and solid FCF per share ($9.82)",
+      "Dominant market position in cloud (Azure) and enterprise software with AI growth catalyst"
+    ],
+    "bearish_factors": [
+      "Majority of valuation models (DCF, Owner Earnings, Residual Income) show stock is significantly overvalued (gap range: -18% to -49%)",
+      "Bearish technical composite signal (62% confidence) with negative trend, momentum, and volatility indications",
+      "Fundamental growth is weak with only 4.2% revenue growth and 5% earnings growth, falling below typical expectations for its valuation",
+      "High valuation multiples (P/E 22, P/B 6.6, P/S 8.6) leave little room for error or disappointment"
+    ],
+    "risks": [
+      "AI monetization may take longer than expected, failing to deliver the growth premium priced into the stock",
+      "Macroeconomic headwinds or recession could further pressure growth and justify the lower valuations suggested by DCF and residual income models",
+      "Technical bearish signals could persist or worsen, leading to further capital depreciation in the short-to-medium term",
+      "The bullish sentiment from news may be short-lived or already priced in, reducing its positive impact"
+    ]
+  },
+  "NVDA": {
+    "signal": "neutral",
+    "confidence": 60.0,
+    "overall_score": 45,
+    "reasoning": "NVIDIA presents a classic valuation versus growth tension. The DCF, owner earnings, and residual income models all suggest the stock is significantly overvalued, indicating a high price relative to intrinsic worth. However, this is counterbalanced by exceptional fundamental strength: dominant profitability (ROE of 104%, net margin of 55%), robust growth (revenue up 15%, earnings up 21%), and a pristine balance sheet (negligible debt, high liquidity). Technically, the momentum is bullish but with low conviction (27% confidence). Bearish sentiment is driven heavily by insider selling, but news sentiment remains positive. This creates a 'Hold' scenario for risk-averse investors, while growth investors might see the premium as justified by secular AI trends. The overall score of 45 reflects a balanced but cautious outlook.",
+    "time_horizon_analysis": {
+      "short_term": "Neutral to slightly bearish due to high valuation and insider selling. The 'hold' signal from technicals and mixed sentiment offers no clear catalyst for near-term gains. Expect price consolidation or a pullback.",
+      "medium_term": "Slightly bullish. Revenue and earnings growth are strong and likely to continue with AI adoption. Any dips could be buying opportunities if growth meets elevated expectations. Valuation may compress if growth slows, but current momentum is positive.",
+      "long_term": "Strongly bullish. NVIDIA's dominance in AI, data centers, and accelerated computing positions it as a critical infrastructure provider for the next technological cycle. Even if current valuations are stretched, long-term earnings growth is likely to catch up, justifying a higher price over 3-5 years."
+    },
+    "bullish_factors": [
+      "Exceptional profitability: ROE of 104% and net margin of 55.6% demonstrate a highly efficient and dominant business model.",
+      "Strong growth trajectory: Revenue (15.4%) and earnings (21%) are growing at double-digit rates, driven by AI demand.",
+      "Pristine financial health: Current ratio of 3.91 and debt-to-equity of only 0.07 indicate a fortress balance sheet with ample liquidity.",
+      "Positive momentum signal from technical analysis, suggesting near-term buying pressure.",
+      "Strong news sentiment: 59% of news articles are bullish, reflecting positive market perception and AI narrative."
+    ],
+    "bearish_factors": [
+      "Significant overvaluation: All intrinsic value models (DCF, owner earnings, residual income) indicate the stock is trading 50-80% above fair value.",
+      "Extreme retail/valuation multiples: P/E of 38, P/B of 29, and P/S of 21 are historically high, leaving little room for error.",
+      "Bearish insider trading: 233 out of 285 insider transactions were sell orders, with a net cash outflow of over $2.8 billion, signaling lack of confidence from executives.",
+      "Overall sentiment is bearish with moderate confidence (47%), driven primarily by insider selling activity.",
+      "Low confidence in the technical composite signal (27%), meaning the bullish trend may be fragile."
+    ],
+    "risks": [
+      "Earnings miss risk: If AI spending slows or NVIDIA fails to meet high growth expectations, the stock could correct sharply due to its high valuation.",
+      "Regulatory/geopolitical risk: Increased export controls on AI chips to China or other markets could disrupt a key revenue stream.",
+      "Competitive risk: AMD and other custom chip makers (like Google's TPU) are increasing competition in the AI accelerator market.",
+      "Interest rate sensitivity: As a high-growth stock with a significant premium, NVDA is sensitive to rising interest rates, which compress valuation multiples.",
+      "Technical/concentration risk: The high weight of AI stocks in momentum-driven strategies could lead to a rapid unwind if sentiment shifts."
+    ]
+  }
+}
+================================================
+
+Analysis Results:
+
+AAPL:
+{
+  "signal": "bearish",
+  "confidence": 68.0,
+  "overall_score": 35,
+  "reasoning": "AAPL appears overvalued across multiple intrinsic valuation methods, with a DCF gap of -48.8%, owner earnings gap of -76.9%, and a weighted intrinsic value gap of -46.7%, strongly suggesting the market has priced in future growth expectations that may not materialize. The fundamentals are mixed: profitability is strong (ROE 146.7%, net margin 27.2%), but growth is modest (3.6% revenue, 4.1% earnings) and valuation multiples are stretched (P/E 29.8, P/B 34.3). The technicals are weakly bullish (composite confidence only 22%), while sentiment is neutral to bullish (48% confidence) with significant insider selling ($587M bearish value vs $619M bullish). The owner earnings signal is particularly alarming, indicating free cash flow generation may not support current market cap.",
+  "time_horizon_analysis": {
+    "short_term": "Bearish - Overvaluation and weak momentum signals suggest potential downside correction in 1-3 months, especially if earnings disappoint or interest rates remain high.",
+    "medium_term": "Neutral to Bearish - Fundamentals provide a floor, but high multiples and modest growth limit upside. Mean reversion likely as valuation gaps persist.",
+    "long_term": "Neutral - Strong brand, ecosystem lock-in, and recurring services revenue provide a moat. However, current pricing implies very high growth expectations that may be hard to sustain."
+  },
+  "bullish_factors": [
+    "Exceptional profitability with ROE of 146.7% and net margins of 27.2%",
+    "Strong free cash flow per share of $8.8 supports buybacks and dividends",
+    "Bullish momentum signal from technical analysis",
+    "High brand loyalty and ecosystem lock-in driving services revenue growth",
+    "Moderate debt-to-equity ratio of 0.80 indicates manageable leverage"
+  ],
+  "bearish_factors": [
+    "Significant overvaluation with DCF gap of -48.8% and owner earnings gap of -76.9%",
+    "Very high valuation multiples: P/E 29.8, P/B 34.3, P/S 8.09",
+    "Low growth rates: revenue growth only 3.6%, earnings growth 4.1%",
+    "Insider trading shows $587M in bearish transactions vs $619M bullish, signaling mixed management confidence",
+    "Weak technical confidence of only 22%, indicating fragile bullish momentum"
+  ],
+  "risks": [
+    "Analyst bias: The DCF model is highly sensitive to assumptions about future growth rates and discount rates; a small change could significantly alter intrinsic value",
+    "Market sentiment risk: Strong brand perception could keep stock elevated despite fundamental overvaluation, leading to prolonged underperformance rather than a sharp correction",
+    "Macroeconomic risk: Rising interest rates or recession could compress multiples and reduce demand for premium consumer electronics",
+    "Competition risk: Increasing competition in smartphones, wearables, and services from Samsung, Google, and others could erode margins and market share",
+    "Regulatory risk: Potential antitrust actions or changes in App Store policies could impact high-margin services revenue",
+    "Historical valuation anomaly: Apple's price has remained elevated despite similar gaps in the past, suggesting the market may be pricing in intangible assets not captured by traditional valuation models"
+  ]
+}
+
+MSFT:
+{
+  "signal": "bearish",
+  "confidence": 62.0,
+  "overall_score": 42,
+  "reasoning": "MSFT presents a mixed picture with conflicting signals across valuation, technicals, and fundamentals, leading to a slightly bearish overall assessment. Valuation is predominantly bearish, with most models indicating the stock is trading above intrinsic value. Technicals are bearish across trend, momentum, and volatility strategies. Fundamentals offer conflicting signals, with strong profitability but weak growth and high valuation ratios. Sentiment is the only unequivocally bullish factor, driven by positive news and insider activity. The weighted average of these factors results in a low neutral/weak sell score. High valuation relative to growth and persistent technical weakness outweigh strong profitability and positive sentiment, justifying a cautious Hold stance.",
+  "time_horizon_analysis": {
+    "short_term": "Bearish technical signals (trend, momentum, volatility) suggest near-term weakness, likely leading to further price declines or sideways consolidation. High valuation and lack of strong catalysts support this cautious view.",
+    "medium_term": "The fundamentals are mixed; strong profitability and healthy financials are offset by slowing growth and high multiples. Valuation models suggest the stock is overvalued. A correction or period of underperformance is possible unless revenue/earnings growth accelerates significantly.",
+    "long_term": "Microsoft's dominant position in cloud computing and enterprise software, combined with its strong balance sheet and AI investments, provides a solid long-term foundation. However, current elevated valuations mean long-term returns may be lower than historical averages. The stock remains a core holding but with limited upside from current levels."
+  },
+  "bullish_factors": [
+    "Strong profitability with industry-leading net (39.3%) and operating margins (49.4%)",
+    "Positive sentiment from news and insider trading activity",
+    "Robust financial health with low debt-to-equity (0.14) and solid FCF per share ($9.82)",
+    "Dominant market position in cloud (Azure) and enterprise software with AI growth catalyst"
+  ],
+  "bearish_factors": [
+    "Majority of valuation models (DCF, Owner Earnings, Residual Income) show stock is significantly overvalued (gap range: -18% to -49%)",
+    "Bearish technical composite signal (62% confidence) with negative trend, momentum, and volatility indications",
+    "Fundamental growth is weak with only 4.2% revenue growth and 5% earnings growth, falling below typical expectations for its valuation",
+    "High valuation multiples (P/E 22, P/B 6.6, P/S 8.6) leave little room for error or disappointment"
+  ],
+  "risks": [
+    "AI monetization may take longer than expected, failing to deliver the growth premium priced into the stock",
+    "Macroeconomic headwinds or recession could further pressure growth and justify the lower valuations suggested by DCF and residual income models",
+    "Technical bearish signals could persist or worsen, leading to further capital depreciation in the short-to-medium term",
+    "The bullish sentiment from news may be short-lived or already priced in, reducing its positive impact"
+  ]
+}
+
+NVDA:
+{
+  "signal": "neutral",
+  "confidence": 60.0,
+  "overall_score": 45,
+  "reasoning": "NVIDIA presents a classic valuation versus growth tension. The DCF, owner earnings, and residual income models all suggest the stock is significantly overvalued, indicating a high price relative to intrinsic worth. However, this is counterbalanced by exceptional fundamental strength: dominant profitability (ROE of 104%, net margin of 55%), robust growth (revenue up 15%, earnings up 21%), and a pristine balance sheet (negligible debt, high liquidity). Technically, the momentum is bullish but with low conviction (27% confidence). Bearish sentiment is driven heavily by insider selling, but news sentiment remains positive. This creates a 'Hold' scenario for risk-averse investors, while growth investors might see the premium as justified by secular AI trends. The overall score of 45 reflects a balanced but cautious outlook.",
+  "time_horizon_analysis": {
+    "short_term": "Neutral to slightly bearish due to high valuation and insider selling. The 'hold' signal from technicals and mixed sentiment offers no clear catalyst for near-term gains. Expect price consolidation or a pullback.",
+    "medium_term": "Slightly bullish. Revenue and earnings growth are strong and likely to continue with AI adoption. Any dips could be buying opportunities if growth meets elevated expectations. Valuation may compress if growth slows, but current momentum is positive.",
+    "long_term": "Strongly bullish. NVIDIA's dominance in AI, data centers, and accelerated computing positions it as a critical infrastructure provider for the next technological cycle. Even if current valuations are stretched, long-term earnings growth is likely to catch up, justifying a higher price over 3-5 years."
+  },
+  "bullish_factors": [
+    "Exceptional profitability: ROE of 104% and net margin of 55.6% demonstrate a highly efficient and dominant business model.",
+    "Strong growth trajectory: Revenue (15.4%) and earnings (21%) are growing at double-digit rates, driven by AI demand.",
+    "Pristine financial health: Current ratio of 3.91 and debt-to-equity of only 0.07 indicate a fortress balance sheet with ample liquidity.",
+    "Positive momentum signal from technical analysis, suggesting near-term buying pressure.",
+    "Strong news sentiment: 59% of news articles are bullish, reflecting positive market perception and AI narrative."
+  ],
+  "bearish_factors": [
+    "Significant overvaluation: All intrinsic value models (DCF, owner earnings, residual income) indicate the stock is trading 50-80% above fair value.",
+    "Extreme retail/valuation multiples: P/E of 38, P/B of 29, and P/S of 21 are historically high, leaving little room for error.",
+    "Bearish insider trading: 233 out of 285 insider transactions were sell orders, with a net cash outflow of over $2.8 billion, signaling lack of confidence from executives.",
+    "Overall sentiment is bearish with moderate confidence (47%), driven primarily by insider selling activity.",
+    "Low confidence in the technical composite signal (27%), meaning the bullish trend may be fragile."
+  ],
+  "risks": [
+    "Earnings miss risk: If AI spending slows or NVIDIA fails to meet high growth expectations, the stock could correct sharply due to its high valuation.",
+    "Regulatory/geopolitical risk: Increased export controls on AI chips to China or other markets could disrupt a key revenue stream.",
+    "Competitive risk: AMD and other custom chip makers (like Google's TPU) are increasing competition in the AI accelerator market.",
+    "Interest rate sensitivity: As a high-growth stock with a significant premium, NVDA is sensitive to rising interest rates, which compress valuation multiples.",
+    "Technical/concentration risk: The high weight of AI stocks in momentum-driven strategies could lead to a rapid unwind if sentiment shifts."
+  ]
+}
+2026-06-19 19:06:03,529 - INFO - Command completed successfully in 47.27 seconds
+2026-06-19 19:06:03,529 - INFO - Running job 9/10
+2026-06-19 19:06:03,529 - INFO - Starting command: poetry run python investment-clock/run.py
+============================================================
+STEP 1: Running FRED ETL + HP Filter
+============================================================
+[36mFetching FRED series...[0m
+  Fetching USALOLITONOSTSAM...
+  Fetching ICSA...
+  Fetching INDPRO...
+  Fetching UNRATE...
+  Fetching CPILFESL...
+  Fetching TCU...
+  Fetching T5YIE...
+  Fetching PPIFID...
+  Fetching GDPC1...
+[36mResampling to monthly...[0m
+[36mComputing EWM Z-scores...[0m
+[36mUpserting to database...[0m
+
+[32mDone! Upserted 123 rows.[0m
+
+Latest reading (2026-06-30):
+  Growth Z-score:    +0.1167
+  Inflation Z-score: +0.0861
+  Phase:             Overheat
+  Clock angle:       36.4352��
+
+  OECD CLI:          99.85
+  Jobless Claims:    228000
+  5Y Breakeven:      2.43%
+  CPI YoY:           2.58%
+  PPI YoY:           6.16%
+  CPI MoM Ann:       N/A
+
+============================================================
+STEP 2: Generating Gemini Deep Research Prompt
+============================================================
+Prompt saved to F:\workspace\sophie-pipeline\investment-clock\prompts\2026-06-19.md
+
+GEMINI DEEP RESEARCH PROMPT — Investment Clock Weekly Analysis
+Date: 2026-06-19
+
+================================================================
+QUANTITATIVE CONTEXT (Merrill Lynch Investment Clock Framework)
+================================================================
+
+As of 2026-06-30, the US economy shows the following EWM Z-score cycle signals:
+
+  Composite Growth Z-score:    +0.117  (above-trend (expansionary))
+    [CLI 50% + INDPRO 20% + inv. Jobless Claims 15% + inv. UNRATE 15%]
+  Composite Inflation Z-score: +0.086  (above-trend (inflationary))
+    [5Y Breakeven 30% + CPI YoY vs 2% 25% + PPI YoY 20% + CPI MoM Ann vs 2% 15% + TCU 10%]
+
+Growth Indicators (latest available):
+  OECD CLI (USALOLITONOSTSAM):     99.85  (>100 = expansion, <100 = contraction; 50% weight)
+  Initial Jobless Claims (ICSA):   228k/week  (inverted; rising = weakening labor; 15% weight)
+  Industrial Production (INDPRO):  102.65  (coincident output; 20% weight)
+  Unemployment Rate (UNRATE):      4.3%  (inverted; 15% weight)
+
+Inflation Indicators (latest available):
+  5Y Breakeven Inflation (T5YIE):  2.43%  (market-implied forward inflation; 30% weight)
+  Core CPI YoY (CPILFESL):         2.58%  (vs 2% Fed target; 25% weight)
+  PPI Final Demand YoY (PPIFID):   6.16%  (pipeline inflation; 20% weight)
+  CPI MoM Annualized:              2.53% (as of 2026-05)  (real-time inflection; vs 2% target; 15% weight)
+  Capacity Utilization (TCU):      76.2%  (demand-pull pressure; 10% weight)
+
+Reference (not in composite):
+  Real GDP (GDPC1):                24152.66
+
+Algorithmically-determined phase: Overheat
+Clock hand position: 36.4 degrees (0 = 12 o'clock, clockwise)
+
+6-Month Trajectory:
+  2025-12  growth_z=+0.147  inflation_z=-0.375  phase=Recovery
+  2026-01  growth_z=+0.173  inflation_z=-0.147  phase=Recovery
+  2026-02  growth_z=+0.153  inflation_z=-0.054  phase=Recovery
+  2026-03  growth_z=+0.107  inflation_z=+0.154  phase=Overheat
+  2026-04  growth_z=+0.086  inflation_z=+0.134  phase=Overheat
+  2026-05  growth_z=+0.158  inflation_z=+0.117  phase=Overheat
+  2026-06  growth_z=+0.117  inflation_z=+0.086  phase=Overheat
+
+Previous Claude evaluation (2026-06-13):
+  Phase:     Overheat at 93.0% confidence
+  Direction: clockwise
+  Summary:   • Growth Z +0.087 and Inflation Z +0.139 both positive; clock at 57.98° firmly in Overheat.
+• Four consecutive Overheat months Mar–Jun 2026; growth decelerating while inflation sticky.
+• Hormuz blockade drove PPI to +6.16% YoY; AI capex sustains growth floor above zero-bound.
+• Fed Warsh holds at 3.
+
+================================================================
+RESEARCH QUESTIONS
+================================================================
+
+Please conduct a comprehensive deep research analysis addressing ALL of the following:
+
+1. PHASE VALIDATION
+   Is the US economy currently in the "Overheat" phase of the Merrill Lynch
+   Investment Clock? What specific economic data, policy signals, and market dynamics
+   support or contradict the quantitative signals above?
+
+2. CYCLE DIRECTION & MOMENTUM
+   Is the clock moving clockwise (normal progression), counter-clockwise (stress/shock),
+   or stalling in place? What does the 6-month trajectory suggest about velocity and
+   direction of the next phase transition?
+
+3. FEDERAL RESERVE & MONETARY POLICY
+   What are the current Fed signals (rate path, dot plot, balance sheet, forward guidance)?
+   How do these align with or diverge from the expected monetary stance for "Overheat"?
+
+4. INFLATION DYNAMICS
+   Is inflation (Core CPI, PCE, PPI, 5-year breakevens) rising, falling, or sticky?
+   How does the current trajectory compare to the Fed's 2% target?
+
+5. GROWTH DYNAMICS
+   What is the latest GDP print and near-term outlook (Atlanta Fed GDPNow, consensus)?
+   Are recessionary signals (yield curve inversion, credit spreads, PMI contraction)
+   present, or is expansion continuing?
+
+6. ASSET CLASS & SECTOR IMPLICATIONS
+   Based on historical Investment Clock performance in the "Overheat" phase:
+   - Which broad asset class (Government Bonds / Equities / Commodities / Cash) is favored?
+   - Which equity sectors historically outperform in this phase?
+   - What specific ETFs (IYW, IYE, IDU, IYF, IYK, IYH, IYJ, IYM, IYZ, IYC) are most aligned?
+
+7. KEY RISKS & DISRUPTIONS
+   What exogenous shocks (geopolitical, policy error, commodity spike, financial instability,
+   trade policy) could force the clock to skip phases or move counter-clockwise?
+
+8. HISTORICAL ANALOGS
+   Which historical periods most closely resemble today's environment (similar Z-score
+   coordinates, similar Fed stance, similar growth-inflation mix)?
+   What happened to asset prices in those analogs over the following 3-6 months?
+
+9. FORWARD OUTLOOK (3-6 months)
+   Given all the above, what is your probabilistic assessment of the next phase transition?
+   How likely is a move to "Stagflation" vs remaining in "Overheat"?
+   What leading indicators should be monitored for early signs of transition?
+
+================================================================
+OUTPUT FORMAT REQUESTED
+================================================================
+
+Please structure your response with:
+1. Executive Summary (3-5 sentences)
+2. Phase Determination: final phase, confidence 0-100, direction (clockwise/counterclockwise/stable)
+3. Key Supporting Evidence (3-5 bullet points)
+4. Key Risks (2-3 bullet points)
+5. Asset Allocation Recommendation (best asset class + top 3 equity sectors)
+6. 3-6 Month Outlook paragraph
+7. Historical Analog comparison
+
+Cite specific sources (Fed statements, BLS/BEA releases, ISM PMI, earnings data, etc.)
+
+
+Next step: paste the prompt into Gemini Deep Research,
+then save the result to investment-clock/prompts/Result-2026-06-19.md
+and run: /investment-clock-analyze F:/workspace/sophie-pipeline/investment-clock/prompts/Result-2026-06-19.md
+2026-06-19 19:06:09,566 - INFO - Command completed successfully in 6.04 seconds
+2026-06-19 19:06:09,566 - INFO - Running job 10/10
+2026-06-19 19:06:09,566 - INFO - Starting command: poetry run python quant-trending/run.py
+============================================================
+Quant Trending ETL - Phase 1
+============================================================
+[ArXiv] Fetching last 3 days of q-fin papers...
+  ->9 papers found
+  [OK] Upserted 9 items
+[GitHub] Searching repos for 'quant finance'...
+  ->20 repos found
+  [OK] Upserted 20 items
+[Reddit] Fetching r/quant/hot...
+  [WARN] Request failed for https://www.reddit.com/r/quant/hot.json: 403 Client Error: Blocked for url: https://www.reddit.com/r/quant/hot.json?limit=25
+[Reddit] Fetching r/algotrading/hot...
+  [WARN] Request failed for https://www.reddit.com/r/algotrading/hot.json: 403 Client Error: Blocked for url: https://www.reddit.com/r/algotrading/hot.json?limit=25
+[Reddit] Fetching r/investing/hot...
+  [WARN] Request failed for https://www.reddit.com/r/investing/hot.json: 403 Client Error: Blocked for url: https://www.reddit.com/r/investing/hot.json?limit=25
+  ->0 posts found
+[HN] Searching 'quant finance'...
+[HN] Searching 'portfolio optimization'...
+[HN] Searching 'factor model'...
+[HN] Searching 'risk management'...
+[HN] Searching 'algorithmic trading'...
+  ->4 HN stories found
+  [OK] Upserted 4 items
+------------------------------------------------------------
+ETL complete. Total items processed: 33
+  arxiv: 9
+  github: 20
+  hackernews: 4
+2026-06-19 19:06:15,306 - INFO - Command completed successfully in 5.74 seconds
+2026-06-19 19:06:15,306 - INFO - All free tickers uploads + investment clock + quant trending completed successfully!
