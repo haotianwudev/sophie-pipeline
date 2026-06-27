@@ -59,7 +59,7 @@ def build_monthly_df(raw: dict) -> pd.DataFrame:
 def compute_z_scores(combined: pd.DataFrame):
     """Return (growth_z, inflation_z) Series using the same EWM formula as ETL."""
     cpi_yoy     = compute_cpi_yoy(combined["CPILFESL"])
-    cpi_mom_ann = compute_cpi_mom_annualized(combined["CPILFESL"])
+    cpi_mom_ann = compute_cpi_mom_annualized(combined["CPILFESL"]).ffill()
     indpro_yoy  = combined["INDPRO"].pct_change(12) * 100
     icsa_yoy    = combined["ICSA"].pct_change(12) * 100
     unrate_diff = combined["UNRATE"].diff(12)
@@ -74,7 +74,7 @@ def compute_z_scores(combined: pd.DataFrame):
         "UNRATE_INV":       ewm_z_score(-unrate_diff),
         "T5YIE":            ewm_z_score(combined["T5YIE"] - FED_TARGET),
         "CPI_YOY":          ewm_z_score(cpi_yoy - FED_TARGET),
-        "PPI_YOY":          ewm_z_score(ppi_yoy),
+        "PPI_YOY":          ewm_z_score(ppi_yoy - FED_TARGET),
         "CPI_MOM_ANN":      ewm_z_score(cpi_mom_ann - FED_TARGET),
         "TCU":              ewm_z_score(combined["TCU"]),
     }

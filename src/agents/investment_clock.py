@@ -8,8 +8,8 @@ and determines the current Investment Clock phase
 Methodology:
   Growth composite  = 50% OECD CLI + 20% INDPRO + 15% inv. ICSA + 15% inv. UNRATE
   Inflation composite = 30% 5Y Breakeven (vs 2%) + 25% CPI YoY (vs 2%)
-                      + 20% PPI Final Demand YoY + 15% CPI MoM ann (vs 2%) + 10% TCU
-  Normalization: EWM Z-score (span=24). CPI/breakeven compared to 2% target, not relative mean.
+                      + 20% PPI Final Demand YoY (vs 2%) + 15% CPI MoM ann (vs 2%) + 10% TCU
+  Normalization: EWM Z-score (span=24). All inflation components except TCU anchored to 2% target.
 
 Run manually:
     python -m src.agents.investment_clock
@@ -60,7 +60,7 @@ GROWTH_WEIGHTS = {
 INFLATION_WEIGHTS = {
     "T5YIE":       0.30,   # Leading: market expectation vs 2% target
     "CPI_YOY":     0.25,   # Lagging confirmer vs 2% target
-    "PPI_YOY":     0.20,   # Pipeline leading (leads CPI 2-6 months)
+    "PPI_YOY":     0.20,   # Pipeline leading (leads CPI 2-6 months), anchored to 2% target
     "CPI_MOM_ANN": 0.15,   # Real-time inflection vs 2% target
     "TCU":         0.10,   # Capacity pressure
 }
@@ -199,7 +199,7 @@ def run_etl():
 
     # --- Derived signals ---
     cpi_yoy = compute_cpi_yoy(combined["CPILFESL"])
-    cpi_mom_ann = compute_cpi_mom_annualized(combined["CPILFESL"])
+    cpi_mom_ann = compute_cpi_mom_annualized(combined["CPILFESL"]).ffill()
     indpro_yoy = combined["INDPRO"].pct_change(12) * 100
     icsa_yoy = combined["ICSA"].pct_change(12) * 100
     unrate_diff = combined["UNRATE"].diff(12)
@@ -226,7 +226,7 @@ def run_etl():
         # Inflation components — all anchored to 2% target
         "T5YIE":            ewm_z_score(combined["T5YIE"] - FED_TARGET),
         "CPI_YOY":          ewm_z_score(cpi_yoy - FED_TARGET),
-        "PPI_YOY":          ewm_z_score(ppi_yoy),
+        "PPI_YOY":          ewm_z_score(ppi_yoy - FED_TARGET),
         "CPI_MOM_ANN":      ewm_z_score(cpi_mom_ann - FED_TARGET),
         "TCU":              ewm_z_score(combined["TCU"]),
     }
