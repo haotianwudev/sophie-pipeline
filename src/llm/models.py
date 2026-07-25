@@ -77,7 +77,7 @@ AVAILABLE_MODELS = [
     ),
     LLMModel(
         display_name="[deepseek] deepseek-v3",
-        model_name="deepseek-chat",
+        model_name="deepseek-v4-pro",
         provider=ModelProvider.DEEPSEEK
     ),
     LLMModel(

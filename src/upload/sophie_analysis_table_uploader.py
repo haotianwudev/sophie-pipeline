@@ -24,7 +24,7 @@ def main():
             "analyst_signals": {}
         },
         metadata={
-            "model_name": "deepseek-chat",
+            "model_name": "deepseek-v4-pro",
             "model_provider": ModelProvider.DEEPSEEK.value,
             "show_reasoning": True
         }

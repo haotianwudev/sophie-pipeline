@@ -3,7 +3,15 @@ from rich.live import Live
 from rich.table import Table
 from rich.style import Style
 from rich.text import Text
-from typing import Dict, Optional
+from typing import Dict, Optiimport sys
+import io
+
+# Force UTF-8 encoding for console output to handle Unicode characters
+# This prevents UnicodeEncodeError on Windows systems with GBK encoding
+if sys.platform == 'win32':
+    # Wrap stdout with UTF-8 encoding, ignoring encoding errors
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
 
 console = Console(highlight=False, force_terminal=False)
 
@@ -61,15 +69,16 @@ class AgentProgress:
             ticker = info["ticker"]
 
             # Create the status text with appropriate styling
+            # Use ASCII-safe characters to avoid encoding issues on Windows
             if status.lower() == "done":
                 style = Style(color="green", bold=True)
-                symbol = "OK"
+                symbol = "[OK]"
             elif status.lower() == "error":
                 style = Style(color="red", bold=True)
-                symbol = "!!"
+                symbol = "[!!]"
             else:
                 style = Style(color="yellow")
-                symbol = ".."
+                symbol = "[..]"
 
             agent_display = agent_name.replace("_agent", "").replace("_", " ").title()
             status_text = Text()
