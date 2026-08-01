@@ -14988,3 +14988,187 @@ ETL complete. Total items processed: 33
   hackernews: 8
 2026-07-24 19:08:26,097 - INFO - Command completed successfully in 12.93 seconds
 2026-07-24 19:08:26,097 - INFO - All free tickers uploads + investment clock + quant trending completed successfully!
+2026-07-31 19:00:03,378 - INFO - Starting free tickers upload process for: AAPL, MSFT, NVDA
+2026-07-31 19:00:03,378 - INFO - Running job 1/10
+2026-07-31 19:00:03,378 - INFO - Starting command: poetry run python src/upload/raw_data_table_uploader.py --tickers AAPL,MSFT,NVDA --table company_facts
+
+Loading financial data for 3 tickers
+Date range: 2025-05-07 to 2026-07-31
+
+Processing company_facts for 3 tickers...
+Completed company_facts: 3/3 succeeded
+
+Summary:
+  Total tickers processed: 3
+  company_facts - Successful: 3
+  company_facts - Failed: 0
+2026-07-31 19:00:09,801 - INFO - Command completed successfully in 6.42 seconds
+2026-07-31 19:00:09,801 - INFO - Running job 2/10
+2026-07-31 19:00:09,801 - INFO - Starting command: poetry run python src/upload/raw_data_table_uploader.py --tickers AAPL,MSFT,NVDA --table prices
+
+Loading financial data for 3 tickers
+Date range: 2025-05-07 to 2026-07-31
+
+Processing prices for 3 tickers...
+
+==============================
+UPLOAD PRICES: 3 tickers, mode: auto
+Date range: 2025-05-07 to 2026-07-31
+==============================
+
+
+--------------------------------------------------
+Processing AAPL...
+Using waterfall logic for data source selection
+STRATEGY: Date range is within 2 years, using Polygon as primary/next source
+Using Polygon for AAPL...
+API CALL: Polygon - Fetching AAPL from 2025-05-07 to 2026-07-31
+POLYGON API: Initializing request for AAPL
+POLYGON API: Date range 2025-05-07 to 2026-07-31
+POLYGON API: Using API key hzC7****Us_7
+POLYGON API: Sending request to Polygon.io API
+POLYGON API: Received 309 records for AAPL
+POLYGON API: First date: 2025-05-07, Last date: 2026-07-30
+POLYGON API: Converting data to Price objects
+POLYGON API: Created 309 Price objects
+POLYGON API: Saving data to database
+Successfully saved 309 price records for AAPL
+POLYGON API: Successfully saved 309 records to database
+SUCCESS: Polygon data for AAPL saved to database
+
+--------------------------------------------------
+Processing MSFT...
+Using waterfall logic for data source selection
+STRATEGY: Date range is within 2 years, using Polygon as primary/next source
+Using Polygon for MSFT...
+API CALL: Polygon - Fetching MSFT from 2025-05-07 to 2026-07-31
+POLYGON API: Initializing request for MSFT
+POLYGON API: Date range 2025-05-07 to 2026-07-31
+POLYGON API: Using API key hzC7****Us_7
+POLYGON API: Sending request to Polygon.io API
+POLYGON API: Received 309 records for MSFT
+POLYGON API: First date: 2025-05-07, Last date: 2026-07-30
+POLYGON API: Converting data to Price objects
+POLYGON API: Created 309 Price objects
+POLYGON API: Saving data to database
+Successfully saved 309 price records for MSFT
+POLYGON API: Successfully saved 309 records to database
+SUCCESS: Polygon data for MSFT saved to database
+
+--------------------------------------------------
+Processing NVDA...
+Using waterfall logic for data source selection
+STRATEGY: Date range is within 2 years, using Polygon as primary/next source
+Using Polygon for NVDA...
+API CALL: Polygon - Fetching NVDA from 2025-05-07 to 2026-07-31
+POLYGON API: Initializing request for NVDA
+POLYGON API: Date range 2025-05-07 to 2026-07-31
+POLYGON API: Using API key hzC7****Us_7
+POLYGON API: Sending request to Polygon.io API
+POLYGON API: Received 309 records for NVDA
+POLYGON API: First date: 2025-05-07, Last date: 2026-07-30
+POLYGON API: Converting data to Price objects
+POLYGON API: Created 309 Price objects
+POLYGON API: Saving data to database
+Successfully saved 309 price records for NVDA
+POLYGON API: Successfully saved 309 records to database
+SUCCESS: Polygon data for NVDA saved to database
+
+==============================
+UPLOAD SUMMARY:
+Total processed: 3
+Success: 3 - AAPL, MSFT, NVDA
+Failed: 0 - None
+==============================
+
+Completed prices: 3/3 succeeded
+
+Summary:
+  Total tickers processed: 3
+  prices - Successful: 3
+  prices - Failed: 0
+2026-07-31 19:00:27,514 - INFO - Command completed successfully in 17.71 seconds
+2026-07-31 19:00:27,517 - INFO - Running job 3/10
+2026-07-31 19:00:27,517 - INFO - Starting command: poetry run python src/upload/raw_data_table_uploader.py --tickers AAPL,MSFT,NVDA --table company_news
+
+Loading financial data for 3 tickers
+Date range: 2025-05-07 to 2026-07-31
+
+Processing company_news for 3 tickers...
+Completed company_news: 0/3 succeeded
+
+Summary:
+  Total tickers processed: 3
+  company_news - Successful: 0
+  company_news - Failed: 3
+2026-07-31 19:00:32,452 - INFO - Command completed successfully in 4.93 seconds
+2026-07-31 19:00:32,453 - INFO - Running job 4/10
+2026-07-31 19:00:32,453 - INFO - Starting command: poetry run python src/upload/raw_data_table_uploader.py --tickers AAPL,MSFT,NVDA --table financial_metrics
+
+Loading financial data for 3 tickers
+Date range: 2025-05-07 to 2026-07-31
+
+Processing financial_metrics for 3 tickers...
+Successfully saved 14 financial metrics records
+Successfully saved 14 financial metrics records
+Successfully saved 13 financial metrics records
+Completed financial_metrics: 3/3 succeeded
+
+Summary:
+  Total tickers processed: 3
+  financial_metrics - Successful: 3
+  financial_metrics - Failed: 0
+2026-07-31 19:00:36,894 - INFO - Command completed successfully in 4.44 seconds
+2026-07-31 19:00:36,894 - INFO - Running job 5/10
+2026-07-31 19:00:36,895 - INFO - Starting command: poetry run python src/upload/raw_data_table_uploader.py --tickers AAPL,MSFT,NVDA --table insider_trades
+
+Loading financial data for 3 tickers
+Date range: 2025-05-07 to 2026-07-31
+
+Processing insider_trades for 3 tickers...
+Deleted existing insider trades for AAPL
+Saved 240 insider trade records after deduplication
+Deleted existing insider trades for MSFT
+Saved 436 insider trade records after deduplication
+Deleted existing insider trades for NVDA
+Saved 300 insider trade records after deduplication
+Completed insider_trades: 3/3 succeeded
+
+Summary:
+  Total tickers processed: 3
+  insider_trades - Successful: 3
+  insider_trades - Failed: 0
+2026-07-31 19:00:40,573 - INFO - Command completed successfully in 3.68 seconds
+2026-07-31 19:00:40,573 - INFO - Running job 6/10
+2026-07-31 19:00:40,573 - INFO - Starting command: poetry run python src/upload/raw_data_table_uploader.py --tickers AAPL,MSFT,NVDA --table line_items
+
+Loading financial data for 3 tickers
+Date range: 2025-05-07 to 2026-07-31
+
+Processing line_items for 3 tickers...
+Successfully saved 13 line items records
+Successfully saved 13 line items records
+Successfully saved 12 line items records
+Completed line_items: 3/3 succeeded
+
+Summary:
+  Total tickers processed: 3
+  line_items - Successful: 3
+  line_items - Failed: 0
+2026-07-31 19:00:43,589 - INFO - Command completed successfully in 3.01 seconds
+2026-07-31 19:00:43,589 - INFO - Running job 7/10
+2026-07-31 19:00:43,589 - INFO - Starting command: poetry run python src/upload/analysis_table_uploader.py --tickers AAPL,MSFT,NVDA
+Traceback (most recent call last):
+  File "F:\workspace\sophie-pipeline\src\upload\analysis_table_uploader.py", line 22, in <module>
+    from utils.display import print_trading_output
+  File "F:\workspace\sophie-pipeline\src\utils\display.py", line 3, in <module>
+    from .analysts import ANALYST_ORDER
+  File "F:\workspace\sophie-pipeline\src\utils\analysts.py", line 3, in <module>
+    from agents.ben_graham import ben_graham_agent
+  File "F:\workspace\sophie-pipeline\src\agents\ben_graham.py", line 10, in <module>
+    from utils.progress import progress
+  File "F:\workspace\sophie-pipeline\src\utils\progress.py", line 6
+    from typing import Dict, Optiimport sys
+                                        ^^^
+SyntaxError: invalid syntax
+2026-07-31 19:00:46,732 - ERROR - Command failed with error: Command '['poetry', 'run', 'python', 'src/upload/analysis_table_uploader.py', '--tickers', 'AAPL,MSFT,NVDA']' returned non-zero exit status 1.

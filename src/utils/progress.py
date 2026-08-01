@@ -3,17 +3,21 @@ from rich.live import Live
 from rich.table import Table
 from rich.style import Style
 from rich.text import Text
-from typing import Dict, Optiimport sys
+from typing import Dict, Optional
+import sys
 import io
 
 # Force UTF-8 encoding for console output to handle Unicode characters
 # This prevents UnicodeEncodeError on Windows systems with GBK encoding
 if sys.platform == 'win32':
     # Wrap stdout with UTF-8 encoding, ignoring encoding errors
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
-    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
+    # Store original streams to prevent "I/O operation on closed file" errors
+    if not isinstance(sys.stdout, io.TextIOWrapper) or sys.stdout.encoding != 'utf-8':
+        sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace', line_buffering=True)
+    if not isinstance(sys.stderr, io.TextIOWrapper) or sys.stderr.encoding != 'utf-8':
+        sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace', line_buffering=True)
 
-console = Console(highlight=False, force_terminal=False)
+console = Console(highlight=False, force_terminal=False, file=sys.stdout)
 
 
 class AgentProgress:
@@ -34,8 +38,13 @@ class AgentProgress:
     def stop(self):
         """Stop the progress display."""
         if self.started:
-            self.live.stop()
-            self.started = False
+            try:
+                self.live.stop()
+            except (ValueError, OSError):
+                # Ignore errors if file handles are already closed
+                pass
+            finally:
+                self.started = False
 
     def update_status(self, agent_name: str, ticker: Optional[str] = None, status: str = ""):
         """Update the status of an agent."""
