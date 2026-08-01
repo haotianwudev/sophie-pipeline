@@ -53,16 +53,19 @@ def call_llm(
             # For non-JSON support models, we need to extract and parse the JSON manually
             if model_info and not model_info.has_json_mode():
                 parsed_result = extract_json_from_response(result.content)
-                if parsed_result:
-                    # Log the successful interaction
-                    log_llm_interaction(
-                        model_name=model_name,
-                        model_provider=model_provider,
-                        prompt=prompt,
-                        response=result.content,
-                        agent_name=agent_name
+                if not parsed_result:
+                    raise ValueError(
+                        f"Failed to extract JSON from response: {result.content[:500]!r}"
                     )
-                    return pydantic_model(**parsed_result)
+                # Log the successful interaction
+                log_llm_interaction(
+                    model_name=model_name,
+                    model_provider=model_provider,
+                    prompt=prompt,
+                    response=result.content,
+                    agent_name=agent_name
+                )
+                return pydantic_model(**parsed_result)
             else:
                 # Log the successful interaction
                 log_llm_interaction(
@@ -110,6 +113,8 @@ def create_default_response(model_class: Type[T]) -> T:
             default_values[field_name] = 0
         elif hasattr(field.annotation, "__origin__") and field.annotation.__origin__ == dict:
             default_values[field_name] = {}
+        elif hasattr(field.annotation, "__origin__") and field.annotation.__origin__ == list:
+            default_values[field_name] = []
         else:
             # For other types (like Literal), try to use the first allowed value
             if hasattr(field.annotation, "__args__"):
@@ -120,15 +125,38 @@ def create_default_response(model_class: Type[T]) -> T:
     return model_class(**default_values)
 
 def extract_json_from_response(content: str) -> Optional[dict]:
-    """Extracts JSON from markdown-formatted response."""
+    """Extracts JSON from a response that may be raw JSON or markdown-fenced JSON."""
+    if not content:
+        return None
+
+    # Many "json_mode" models return raw JSON with no fence at all
+    try:
+        return json.loads(content)
+    except (json.JSONDecodeError, TypeError):
+        pass
+
     try:
         json_start = content.find("```json")
+        skip = 7
+        if json_start == -1:
+            json_start = content.find("```")
+            skip = 3
         if json_start != -1:
-            json_text = content[json_start + 7:]  # Skip past ```json
+            json_text = content[json_start + skip:]
             json_end = json_text.find("```")
             if json_end != -1:
                 json_text = json_text[:json_end].strip()
                 return json.loads(json_text)
     except Exception as e:
         print(f"Error extracting JSON from response: {e}")
+
+    # Last resort: grab the outermost { ... } span
+    try:
+        start = content.find("{")
+        end = content.rfind("}")
+        if start != -1 and end != -1 and end > start:
+            return json.loads(content[start:end + 1])
+    except Exception as e:
+        print(f"Error extracting JSON from response: {e}")
+
     return None
