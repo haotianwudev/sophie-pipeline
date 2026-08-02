@@ -1,0 +1,26 @@
+{
+  "final_phase": "Recovery",
+  "phase_confidence": 20,
+  "phase_direction": "counterclockwise",
+  "reasoning": "The US economy mathematically registers in the Recovery phase as of July 31, 2026, driven by a Composite Growth Z-score of +0.131 and a Composite Inflation Z-score of -0.604. However, this quantitative signal masks significant underlying economic fragility and an anomalous counterclockwise rotation from June's Overheat phase. The sharp drop in the inflation Z-score is primarily an artifact of a transient month-over-month headline CPI plunge (-0.20% annualized), which temporarily hides sticky producer prices (PPI Final Demand at 4.77% YoY) and core inflation pressures.\n\nMonetary policy dynamics further complicate the picture. At the July 2026 FOMC meeting, the Federal Reserve held rates steady at 3.50%-3.75%, but featured a historic 9-3 hawkish dissent with three regional presidents advocating for an immediate 25-basis-point hike. Chairman Warsh's explicit abandonment of forward guidance triggered a bear steepening of the Treasury yield curve, with 10-year yields surging to 4.75% and 30-year yields touching 5.21%. While the bear steepening un-inverts the yield curve (+0.47 bps spread), historically such un-inversions precede economic deceleration rather than organic early-cycle recovery.\n\nNavigating this regime requires recognizing that the current Recovery reading represents a deflationary mirage driven by volatile energy bases and import spikes related to AI capital expenditures. As base effects wash out and pipeline inflation passes through to headline prices, the Investment Clock is highly likely to rotate violently back into Overheat or skip directly into Stagflation if credit conditions tighten further.",
+  "outlook": "Over the next 3-6 months, the economy faces a high probability (approx. 60%) of mean-reverting clockwise back into the Overheat phase as transient headline CPI deflationary drag fades and persistent PPI pressures (4.77%) pass through into consumer prices. A secondary risk (approx. 25% probability) is a direct leap into Stagflation if the un-inversion of the yield curve and commercial real estate debt refinancing stress trigger bank credit contraction while energy prices remain elevated near $90/bbl Brent. Investors should monitor the PPI-CPI spread and corporate credit default spreads for early signs of phase transition.",
+  "key_indicators": [
+    "Composite Growth Z-score (+0.131) and Composite Inflation Z-score (-0.604) place quantitative signal in Recovery quadrant",
+    "Headline CPI MoM annualized dropped to -0.20%, while PPI Final Demand YoY remains elevated at 4.77%",
+    "Yield curve bear steepened to +0.47 bps (10Y at 4.75%, 30Y at 5.21%) following 9-3 hawkish FOMC dissent",
+    "Real GDP expanded at 1.5% in Q2 2026, slowed by a record $77.6B trade deficit driven by capital goods/AI imports",
+    "Brent crude oil rebounded to $90/bbl amid deteriorating US-Iran MoU, threatening renewed headline inflation"
+  ],
+  "risks": [
+    "Monetary policy fracture and yield volatility driven by 9-3 FOMC hawkish dissent and destruction of Fed forward guidance",
+    "Geopolitical escalation and oil price shock breaching $90/bbl, threatening to reignite headline CPI",
+    "Commercial Real Estate (CRE) refinancing wall with low DSCRs creating credit contraction risks"
+  ],
+  "best_asset": "Equities",
+  "recommended_sectors": [
+    "Technology",
+    "Consumer Discretionary",
+    "Energy"
+  ],
+  "gemini_research_summary": "The July 2026 Investment Clock quantitatively indicates a Recovery phase, but this is driven by a transient headline CPI drop masking elevated producer prices (PPI 4.77%) in an anomalous counterclockwise shift. Federal Reserve internal division (9-3 FOMC dissent) and yield curve bear steepening highlight underlying structural risks, favoring a barbell allocation of Equities (Technology, Consumer Discretionary) hedged with Energy/Commodities."
+}
