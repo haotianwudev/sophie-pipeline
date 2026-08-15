@@ -1,0 +1,26 @@
+{
+  "final_phase": "Recovery",
+  "phase_confidence": 45,
+  "phase_direction": "clockwise",
+  "reasoning": "The US economy quantitatively registers in the Recovery phase as of August 14, 2026, supported by a Composite Growth Z-score of +0.207 and a Composite Inflation Z-score of -0.427. The macroeconomic clock hand has advanced decisively clockwise to 295.8 degrees—placing the economy directly on the threshold of the 300-degree Overheat boundary. Real growth momentum remains exceptionally strong, highlighted by an Atlanta Fed GDPNow Q3 forecast of 5.8%, an ISM Manufacturing PMI of 55.6 (a 50-month high), initial jobless claims at a tight 204k, and unemployment stable at 4.1%.\n\nThe disinflationary headline optics that drove July's counterclockwise jump are rapidly dissolving. CPI MoM annualized inflected sharply upward from -0.20% to +2.62%, pushing Core CPI YoY back above target to 2.15% and narrowing the negative Inflation Z-score from -0.692 to -0.427. Meanwhile, PPI Final Demand remains elevated at 4.99% YoY, confirming that persistent wholesale producer price pressures are now actively transmitting into consumer end-prices as businesses regain pricing power amid strong demand.\n\nMonetary policy dynamics under Chairman Kevin Warsh amplify cycle momentum. The July FOMC decision to hold rates at 3.50%-3.75% featured a historic 9-3 hawkish dissent (Logan, Hammack, Kashkari pressing for a 25 bps hike). With forward guidance eliminated, long-end Treasury yields have steepened (10Y near 4.65%-4.75%, 30Y near 5.20%). The rapid progression from 287.3° to 295.8° indicates that the economy is on the verge of crossing into Overheat, favoring Equities (Technology, Telecom, Materials) with increasing tactical allocation to Commodities.",
+  "outlook": "Over the next 3-6 months, there is a 70% probability that the economy completes its clockwise transition into the Overheat phase (clock hand crossing 300°). High Q3 GDP growth (5.8% GDPNow) and persistent 4.99% PPI wholesale inflation will continue passing into consumer prices, pushing the Composite Inflation Z-score positive. Upon crossing 300°, asset allocation will shift toward Commodities (Energy/Materials) as the primary outperforming asset class. A secondary scenario (20% probability) holds the economy in late-stage Recovery if productivity gains suppress end-price spikes, while a tail-risk scenario (10%) involves a leap into Stagflation if geopolitical energy shocks hit tight credit markets.",
+  "key_indicators": [
+    "Composite Growth Z-score (+0.207) and Composite Inflation Z-score (-0.427) place clock hand at 295.8 degrees, on the cusp of Overheat (300°)",
+    "CPI MoM Annualized inflected sharply upward from -0.20% to +2.62%, pushing Core CPI YoY back above target to 2.15%",
+    "Atlanta Fed GDPNow Q3 forecast holds strong at 5.8% real GDP growth and ISM Manufacturing PMI stands at an expansionary 55.6",
+    "Wholesale producer inflation remains elevated at 4.99% YoY (PPI Final Demand), transmitting input cost pressures into consumer prices",
+    "Yield curve bear steepened (+0.52 bps 10Y-2Y spread) amid a hawkish 9-3 FOMC dissent and 30-year Treasury yields near 5.20%"
+  ],
+  "risks": [
+    "Overheat Crossover: CPI acceleration pushing Inflation Z-score above 0.0, shifting leadership from Growth Equities to Commodities",
+    "Hawkish FOMC Repricing: 9-3 FOMC hawkish split and re-accelerating CPI forcing a December rate hike to 3.75%-4.00%",
+    "Term Premium Volatility: High long-end yields (30Y at 5.20%) creating refinancing risks for commercial real estate and leveraged corporate debt"
+  ],
+  "best_asset": "Equities",
+  "recommended_sectors": [
+    "Technology",
+    "Telecom",
+    "Materials"
+  ],
+  "gemini_research_summary": "The August 14, 2026 Investment Clock analysis places the US economy in late-stage Recovery at 295.8°, accelerating clockwise toward Overheat (300°). Rebounding consumer inflation (CPI MoM at +2.62%, Core CPI at 2.15%) and persistent wholesale PPI (4.99%) combined with 5.8% GDPNow growth confirm active producer cost pass-through, favoring Equities (Technology, Telecom, Materials) with increasing tactical weighting in Commodities."
+}
