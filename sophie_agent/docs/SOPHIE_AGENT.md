@@ -316,7 +316,7 @@ additional quant toolkits from Phase 1's extension seam.
 ```
 sophie_agent/
   __init__.py  run.py  serve.py  eval.py
-  docs/        SOPHIE_AGENT.md  SPX_OPTIONS_API.md
+  docs/        SOPHIE_AGENT.md
   core/        __init__.py  agent.py  runtime.py  profiles.py  config.py  schemas.py  callbacks.py
   context/     __init__.py  runcontext.py  store.py  wiki_store.py  cache.py  run_record.py
   server/      __init__.py  server.py  ag_ui_mapper.py
