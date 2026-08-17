@@ -27,6 +27,10 @@ class AgentProfile:
     answer_model: Type[BaseModel] | None = None
     max_iterations: int = 15
     can_delegate: bool = False
+    # Single emoji shown as this agent's persona in the chat widget whenever SOPHIE (the
+    # supervisor) delegates to it — see GET /agents in server.py and docs/SOPHIE_AGENT.md's
+    # "Persona-per-delegation" section. Purely cosmetic; never read by any agent/toolkit code.
+    persona_icon: str = "🤖"
 
 
 AGENT_PROFILES: dict[str, AgentProfile] = {
@@ -42,6 +46,7 @@ AGENT_PROFILES: dict[str, AgentProfile] = {
             "results. Always cite the page `path` for any claim. If the wiki doesn't cover "
             "something, say so plainly rather than guessing."
         ),
+        persona_icon="📚",
     ),
     "option_strategist": AgentProfile(
         key="option_strategist",
@@ -57,6 +62,7 @@ AGENT_PROFILES: dict[str, AgentProfile] = {
             "strategy_backtest_evidence when a recommendation needs justification."
         ),
         answer_model=StrategyRecommendation,
+        persona_icon="📈",
     ),
     "quant": AgentProfile(
         key="quant",
@@ -70,6 +76,7 @@ AGENT_PROFILES: dict[str, AgentProfile] = {
             "toolkit to analyze it. Always inspect a query's shape/schema before drawing "
             "conclusions from it."
         ),
+        persona_icon="🧮",
     ),
     "market_analyst": AgentProfile(
         key="market_analyst",
@@ -82,6 +89,7 @@ AGENT_PROFILES: dict[str, AgentProfile] = {
             "You are Sophie's market analyst. Answer regime and single-name questions using "
             "GraphQL/SQL for current data and the wiki for methodology context."
         ),
+        persona_icon="🌐",
     ),
     "generalist": AgentProfile(
         key="generalist",
@@ -96,7 +104,7 @@ AGENT_PROFILES: dict[str, AgentProfile] = {
     ),
     "supervisor": AgentProfile(
         key="supervisor",
-        display_name="Supervisor",
+        display_name="Sophie",
         description="Plans, fans work out to specialist agents, and synthesises their answers.",
         toolkits=("delegate", "wiki"),
         model_name="deepseek-chat",
@@ -108,6 +116,7 @@ AGENT_PROFILES: dict[str, AgentProfile] = {
             "Preserve any backtested-vs-conventional distinctions your specialists report."
         ),
         can_delegate=True,
+        persona_icon="✨",
     ),
 }
 

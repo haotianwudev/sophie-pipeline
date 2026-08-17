@@ -71,9 +71,53 @@ def health() -> dict:
     return {"status": "ok", "profiles": list(AGENT_PROFILES.keys())}
 
 
+@app.get("/agents")
+def get_agents() -> dict:
+    """Persona registry for the chat widget's delegation UI (see docs/SOPHIE_AGENT.md's
+    "Persona-per-delegation" section). Excludes can_delegate profiles (supervisors, i.e. SOPHIE
+    herself) — those are never a delegate() target, mirroring DelegationToolkit.list_agents()'s
+    own filter, so the two stay consistent by construction rather than by convention."""
+    return {
+        "agents": [
+            {
+                "key": key,
+                "displayName": p.display_name,
+                "description": p.description,
+                "icon": p.persona_icon,
+            }
+            for key, p in AGENT_PROFILES.items()
+            if not p.can_delegate
+        ],
+        "supervisor": {
+            "key": "supervisor",
+            "displayName": AGENT_PROFILES["supervisor"].display_name,
+            "icon": AGENT_PROFILES["supervisor"].persona_icon,
+        },
+    }
+
+
+# Ollama tags for embedding-only models (e.g. bge-m3, nomic-embed-text) — pulled for the wiki
+# toolkit's own use, never chat models. get_model_info() doesn't know about them (they're not in
+# AVAILABLE_MODELS/OLLAMA_MODELS), so without this exclusion they default to
+# supportsToolCalling=True purely because they're unrecognized, and show up in the chat model
+# picker as if they were usable — they're not, they have no chat/completion capability at all.
+_EMBEDDING_MODEL_MARKERS = ("bge", "embed", "e5-", "gte-", "minilm")
+
+
+def _is_embedding_model(name: str) -> bool:
+    lowered = name.lower()
+    return any(marker in lowered for marker in _EMBEDDING_MODEL_MARKERS)
+
+
 @app.get("/models")
 def get_models() -> dict:
-    """Return live discovered Ollama models alongside configured models."""
+    """Return live discovered Ollama models alongside configured models.
+
+    Only models that actually support tool calling are returned — sophie_agent's toolkits are
+    exposed via bind_tools()/create_tool_calling_agent(), so a model without tool-calling support
+    (e.g. deepseek-reasoner / any local R1 distill) can't drive this agent at all, and listing it
+    would just be a picker entry that silently produces prose-only, tool-less runs.
+    """
     ollama_tags = []
     try:
         resp = requests.get(f"{DEFAULT_CONFIG.ollama_base_url}/api/tags", timeout=2)
@@ -81,7 +125,7 @@ def get_models() -> dict:
             data = resp.json()
             for m in data.get("models", []):
                 name = m.get("name")
-                if name:
+                if name and not _is_embedding_model(name):
                     ollama_tags.append(name)
     except Exception:
         pass
@@ -92,11 +136,14 @@ def get_models() -> dict:
     for tag in ollama_tags:
         seen.add(tag)
         info = get_model_info(tag)
+        supports_tools = info.supports_tool_calling() if info else True
+        if not supports_tools:
+            continue
         models_list.append({
             "name": tag,
             "provider": "ollama",
             "displayName": tag,
-            "supportsToolCalling": info.supports_tool_calling() if info else True,
+            "supportsToolCalling": True,
             "isLocal": True,
             "pulled": True,
         })
@@ -106,12 +153,14 @@ def get_models() -> dict:
         if model_name in seen:
             continue
         seen.add(model_name)
+        if not info.supports_tool_calling():
+            continue
         is_ollama = info.provider == ModelProvider.OLLAMA
         models_list.append({
             "name": model_name,
             "provider": info.provider.value.lower(),
             "displayName": info.display_name,
-            "supportsToolCalling": info.supports_tool_calling(),
+            "supportsToolCalling": True,
             "isLocal": is_ollama,
             "pulled": not is_ollama,
         })

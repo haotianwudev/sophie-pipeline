@@ -251,9 +251,153 @@ was caught live.
 styled with Sophie's own design tokens — this library version ships ready-made components via the
 shadcn registry as owned source, not an import, so hand-building was the intended pattern, not a
 workaround) → `chat-markdown.tsx` (reuses the `remarkGfm`+`remarkMath`+`rehypeKatex` trio from
-`wiki-markdown.tsx` at chat scale via `@assistant-ui/react-markdown`'s `MarkdownTextPrimitive`).
-Mounted in `client/src/app/layout.tsx` inside `<UserProvider>`, right after `{children}` — the only
-position with Apollo + Supabase user + theme all available.
+`wiki-markdown.tsx` at chat scale via `@assistant-ui/react-markdown`'s `MarkdownTextPrimitive`, but
+with its own compact component map — `wiki-markdown.tsx`'s spacing is article-scale, too large for
+a ~360px chat panel).
+Mounted via `dev-chat-mount.tsx` in `client/src/app/layout.tsx` inside `<UserProvider>`, right after
+`{children}` — the only position with Apollo + Supabase user + theme all available, and critically
+**outside** `{children}` so the widget's React tree is never inside the routed page segment: a
+same-tab client-side navigation to any other route re-renders `{children}` but does not unmount
+`ChatWidget`, so an in-progress conversation survives clicking around the site.
+
+#### `chat-widget.tsx` — floating launcher + panel
+
+A `"use client"` component holding all its own UI chrome state (`open`, `position`, `size`,
+`isMaximized`, `prevBounds`) in `useState` — nothing persisted, so a hard page reload always starts
+closed/blank. Three independent interaction handlers built on raw Pointer Events (no drag library):
+free-drag via the header bar (`handleDragStart`, skips drag if the pointerdown target is inside a
+`button, input, select, a`), 8-direction resize handles (`handleResizeStart`, min 340×420), and
+maximize/restore (`toggleMaximize`, remembers `prevBounds` to restore exact prior geometry). A
+window-resize listener re-clamps `position` back into the viewport so the panel can't be dragged
+off-screen and then stranded after a browser resize. Reset button (`initPosition`) snaps back to the
+default bottom-right placement/size. Local-only enforcement layer 3 lives here too:
+`allowed` starts `false` and only flips true in a `useEffect` after checking
+`window.location.hostname` against `["localhost", "127.0.0.1"]` — `if (!allowed) return null` — see
+"Localhost-only enforcement" above for the other two layers.
+
+**Pop-out window** (`handlePopout`): `window.open("/agent-popout", ...)` into a real second OS-level
+browser window (not a tab, not an iframe — sized/positioned via `window.screen.availWidth/Height`),
+then closes the embedded panel (`setOpen(false)`). `agent-popout/page.tsx` is a standalone route
+(dynamically importing `ChatThread` with `ssr: false`, same localhost-hostname gate) that renders
+just the thread with a minimal title bar — no drag/resize chrome, since it's a real OS window now.
+Its docstring in the header button (`title="...immune to page reloads"`) is the load-bearing fact:
+because it is a genuinely separate `window.open()` window rather than something living inside the
+site's own document, navigating the *main* tab around (including full reloads) cannot touch it. This
+is the mechanism to reach for whenever a conversation needs to survive something the embedded
+widget's same-tab-navigation mitigation (below) doesn't cover — e.g. an actual hard refresh (F5), or
+navigating to an external site and back.
+
+**`DevChatMount` gate** (`dev-chat-mount.tsx`): also hides the widget entirely on `/agent-popout`
+routes (`pathname === "/agent-popout"`), so the popout window never recursively spawns another
+floating launcher inside itself.
+
+#### `chat-thread.tsx` — runtime wiring + message rendering
+
+Shared by both the embedded widget and the popout window (`profile`/`onProfileChange` passed in as
+props so each host owns its own profile-selection state). Per render:
+
+- `agentUrl` (`useMemo` on `[profile, selectedModel, selectedProvider]`) builds
+  `${AGENT_API_URL}/agent/${profile}` with optional `?model=&provider=` query params —
+  `AGENT_API_URL` defaults to `http://localhost:8000` via `NEXT_PUBLIC_AGENT_API_URL`.
+- `agent = new HttpAgent({ url: agentUrl })` and `runtime = useAgUiRuntime({ agent })`, both
+  `useMemo`/hook-derived from `agentUrl` — **switching the profile chip or the model/provider
+  selector constructs a brand-new `HttpAgent` and a brand-new runtime**, which resets the visible
+  conversation. This is a second, independent way conversation state can reset besides the
+  navigation issue below — expected here (the AG-UI thread is genuinely tied to one backend
+  `AgentProfile`+model), but worth knowing when someone reports "the chat cleared" and the actual
+  cause was a model-selector click, not a page navigation.
+- `ChatConfigContext` (verbose flag, selected model/provider) is a separate context from the AG-UI
+  runtime, threaded down so `ToolInspector`/`ModelSelector` can read/set it without re-rendering the
+  whole thread. `selectedModel`/`selectedProvider`/`verbose` are the **only** pieces of chat UI state
+  that persist across a hard reload, via `localStorage` (`sophie_agent_model`,
+  `sophie_agent_provider`, `sophie_agent_verbose`) — the message history itself is not persisted
+  anywhere client-side; it lives only in the AG-UI runtime's in-memory state for the life of the
+  mounted component.
+- `ThreadPrimitive.Messages` maps `AssistantMessage` parts through
+  `{ Text: ChatMarkdown, tools: { by_name: TOOL_BY_NAME, Fallback: TOOL_FALLBACK } }` — `TOOL_BY_NAME`
+  is built once at module scope from `tool-ui/index.ts`'s `TOOL_UI` registry, each entry wrapped by
+  `wrapToolUi()` which parses the tool result through `parseEnvelope()` and renders the matched React
+  component plus (if verbose) a `ToolInspector` raw-trace panel; tools with no envelope or no
+  registry match fall through to `TOOL_FALLBACK`, i.e. `ToolInspector` alone.
+
+#### Gotcha — same-tab vs. new-tab links inside the chat, and why it matters for state
+
+Any link the chat renders is either (a) a Next `<Link>` in the **same tab** — a client-side route
+transition that does *not* unmount `ChatWidget` (it lives outside `{children}`, see above), so the
+conversation survives — or (b) `target="_blank"` — a genuinely new browsing context, which is a real
+full page load with no way around it, and boots a second, independent, empty `ChatWidget`/`ChatThread`
+instance in that new tab. If the browser auto-focuses new tabs (the common default), clicking such a
+link reads exactly like "the page refreshed and the agent reset," even though the original tab's
+conversation is untouched in the background.
+
+The sitewide convention, set by `WikiCard`/`WikiModal` in `article-frame.tsx` and already followed by
+`chat-markdown.tsx`'s inline citation links, is same-tab `Link` with no `target`.
+`tool-ui/wiki-citation-list.tsx` (the dedicated citation-card UI for `wiki_search` results)
+previously diverged from that convention by adding `target="_blank"` — this was the direct cause of
+users reporting the chat "refreshing" when clicking an article citation. Fixed by dropping
+`target="_blank"` there so citation cards behave like every other wiki link on the site. Any new
+chat tool-UI component that links to an in-app route (`/wiki/...`, `/strategy/...`, etc.) should
+default to a plain same-tab `<Link>` for this reason — reach for `target="_blank"` only when the
+link is genuinely external, and reach for the pop-out window (above) if a conversation specifically
+needs to survive a hard reload rather than just a same-tab route change.
+
+**Second instance of the same bug, different code path:** `chat-markdown.tsx`'s inline `a`
+renderer (used for citation links the model writes as prose, not through a dedicated tool-UI card)
+only treated an href as internal via `href?.startsWith("/")`. When the model cites a page using a
+full absolute URL — e.g. a David Tepper article link built from a canonical URL returned by a
+GraphQL/article-lookup tool result rather than a bare relative path — that check misses it and the
+link falls into the `target="_blank"` branch, reintroducing the exact same new-tab/detached-agent
+symptom via a different route than the citation-card one above. Fixed with `toInternalPath()`
+(`chat-markdown.tsx`): resolves the href against `window.location.origin` via the `URL` constructor
+and, if the origin matches, strips it down to a same-origin path for a same-tab `Link` regardless of
+whether the model wrote it as `/articles/...` or `https://<site-domain>/articles/...`. Only a
+genuinely different origin still falls through to `target="_blank"`. Worth remembering for *any*
+future tool-UI or markdown link renderer in the chat: same-origin-ness, not "does the string start
+with a slash," is the real test for "should this stay in the current tab."
+
+#### Gotcha — `/models` response shape mismatch silently emptied the model picker
+
+`ModelSelector` (`model-selector.tsx`) fetches `GET {AGENT_API_URL}/models` and expected the grouped,
+snake_case `ModelsResponse` shape its own `FALLBACK_MODELS` uses:
+`{ ollama: ModelItem[], remote: ModelItem[], default: {...} }` with `model_name`/`display_name`/
+`supports_tool_calling`/`is_pulled` fields. `sophie_agent/server/server.py`'s actual `get_models()`
+returns a different, flat, camelCase shape instead:
+`{ models: [{ name, provider, displayName, supportsToolCalling, isLocal, pulled }], defaultModel,
+defaultProvider }`. `fetchModels()` did `setModelsData(data)` with no validation, so on every
+successful fetch (the common case) it overwrote the good `FALLBACK_MODELS` state with an object
+whose `.ollama`/`.remote` are `undefined` — both `filteredOllama`/`filteredRemote` collapsed to `[]`,
+and the dropdown showed nothing but "Profile Default (deepseek-chat)" no matter how many models the
+server actually had. This is why toggling the model selector looked like "only deepseek" was ever
+available. Fixed with `normalizeModelsResponse()` in `model-selector.tsx`, which maps the server's
+flat array into the grouped/snake_case shape the rest of the component already expects (grouping by
+`isLocal`, translating field names) before it ever reaches `setModelsData`.
+
+While diagnosing this, two more real models-list bugs surfaced in `get_models()` and were fixed at
+the same time:
+
+- **Embedding-only Ollama models leaking into the chat picker.** Any tag pulled on the Ollama daemon
+  that `get_model_info()` doesn't recognize (i.e. isn't in `AVAILABLE_MODELS`/`OLLAMA_MODELS` in
+  `src/llm/models.py`) defaulted to `supportsToolCalling: True` purely because it was unrecognized —
+  which is backwards for something like `bge-m3:latest` (pulled for the wiki toolkit's own use, an
+  embeddings model with no chat/completion capability at all, let alone tool calling). Fixed with an
+  `_is_embedding_model()` name-marker filter (`bge`, `embed`, `e5-`, `gte-`, `minilm`) that excludes
+  these from the Ollama tag list before it's ever turned into picker entries.
+- **Non-tool-calling models listed as if they were usable.** `deepseek-r1:14b` (Ollama) and
+  `deepseek-reasoner` (DeepSeek API, `AVAILABLE_MODELS`) both correctly report
+  `supports_tool_calling() == False` via `LLMModel.supports_tool_calling()` (`src/llm/models.py`) —
+  but `get_models()` still listed them, just with the flag set to `false`, and the frontend rendered
+  that as an amber "No tools (reasoning / chat only)" warning rather than hiding the entry. Since
+  sophie_agent's entire toolkit surface is exposed via `bind_tools()`/`create_tool_calling_agent()`,
+  a model without tool-calling support can't drive this agent at all — selecting one wouldn't error,
+  it would just silently run tool-less, prose-only turns. `get_models()` now drops any model (Ollama
+  or remote) whose `supports_tool_calling()` is `False` instead of listing it as a trap option; every
+  entry it returns now has `supportsToolCalling: true` unconditionally.
+
+**Gotcha for next time:** `sophie_agent/serve.py` does not run with `--reload` by default (it's an
+opt-in `--reload` CLI flag) — a `server.py`/`core/*` edit needs the process restarted
+(`Stop-Process` the PID on port 8000, then `python sophie_agent/serve.py` again from the
+`sophie-pipeline` root) before it takes effect, unlike the Next.js client side where Turbopack's Fast
+Refresh picks up `.tsx` edits automatically without a restart.
 
 **Library choice:** `@assistant-ui/react` (1.45M npm downloads/wk) over CopilotKit (335K) — most
 popular AG-UI-native React client, and its direct-client-connection path in CopilotKit is still
