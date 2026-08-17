@@ -101,7 +101,8 @@ def get_models() -> dict:
             "pulled": True,
         })
 
-    for model_name, info in AVAILABLE_MODELS.items():
+    for info in AVAILABLE_MODELS:
+        model_name = info.model_name
         if model_name in seen:
             continue
         seen.add(model_name)
@@ -109,7 +110,7 @@ def get_models() -> dict:
         models_list.append({
             "name": model_name,
             "provider": info.provider.value.lower(),
-            "displayName": info.name,
+            "displayName": info.display_name,
             "supportsToolCalling": info.supports_tool_calling(),
             "isLocal": is_ollama,
             "pulled": not is_ollama,
