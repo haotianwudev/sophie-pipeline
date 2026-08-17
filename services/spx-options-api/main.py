@@ -427,13 +427,15 @@ def get_gex(
             strike_map[strike]["call_vol"] += int(c["volume"])
             total_call_gex += dollar_gex
         else:
-            strike_map[strike]["put_gex_m"] += dollar_gex
+            # Dealers are short the puts customers bought -> negative gamma, matching the
+            # sign convention used by calculate_spx_gex in src/tools/api_cboe.py.
+            strike_map[strike]["put_gex_m"] -= dollar_gex
             strike_map[strike]["put_oi"] += int(oi)
             strike_map[strike]["put_vol"] += int(c["volume"])
-            total_put_gex += dollar_gex
+            total_put_gex -= dollar_gex
 
     for s in strike_map.values():
-        s["net_gex_m"] = round(s["call_gex_m"] - s["put_gex_m"], 4)
+        s["net_gex_m"] = round(s["call_gex_m"] + s["put_gex_m"], 4)
         s["call_gex_m"] = round(s["call_gex_m"], 4)
         s["put_gex_m"] = round(s["put_gex_m"], 4)
 
@@ -443,7 +445,7 @@ def get_gex(
         "symbol": data["symbol"],
         "spot_price": spot,
         "expiration": target_exp,
-        "total_net_gex_m": round(total_call_gex - total_put_gex, 4),
+        "total_net_gex_m": round(total_call_gex + total_put_gex, 4),
         "total_call_gex_m": round(total_call_gex, 4),
         "total_put_gex_m": round(total_put_gex, 4),
         "strikes_count": len(sorted_strikes),
