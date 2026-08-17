@@ -2,9 +2,9 @@
 """Golden-set eval harness — asserts on tool TRAJECTORY (which tools fired), not just final text.
 
 Usage:
-    poetry run python sophie-agent/eval.py                 # remote tier, per-case default models
-    poetry run python sophie-agent/eval.py --all-local      # every case forced onto Ollama qwen3.5
-    poetry run python sophie-agent/eval.py --cases path.yaml
+    poetry run python sophie_agent/eval.py                 # remote tier, per-case default models
+    poetry run python sophie_agent/eval.py --all-local      # every case forced onto Ollama qwen3.5
+    poetry run python sophie_agent/eval.py --cases path.yaml
 """
 
 import argparse

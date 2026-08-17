@@ -3,7 +3,7 @@
 A LangChain tool-calling agent over the Sophie platform: 240 wiki pages, a 19-table market-data
 Postgres, the public GraphQL API, live SPX option chains, and 14 years of historical OptionsDX
 chains. Lives at `sophie_agent/`, entrypoints `sophie_agent/run.py` (CLI) and
-`sophie_agent/serve.py` / `sophie-agent/serve.py` (local-only AG-UI HTTP API, Phase 2 — see below). The Sophie client repo's
+`sophie_agent/serve.py` (local-only AG-UI HTTP API, Phase 2 — see below). The Sophie client repo's
 chat widget (`src/components/chat/`) talks to the latter directly.
 
 ## Why
@@ -183,7 +183,7 @@ Browser (localhost:3000)                          Python (localhost:8000)
    dev-only, tree-shaken from prod builds             never deployed
 ```
 
-### Server — `src/sophie_agent/server.py` + `sophie-agent/serve.py`
+### Server — `sophie_agent/server/server.py` + `sophie_agent/serve.py`
 
 FastAPI + `ag-ui-protocol` (`ag_ui.core` types, `ag_ui.encoder.EventEncoder`). Three endpoints:
 `GET /health`, `GET /agents` (profile list for the widget's picker), `POST /agent/{profile}` →

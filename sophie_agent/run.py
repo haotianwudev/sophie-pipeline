@@ -2,14 +2,14 @@
 """Entrypoint for the Sophie agent — matches the investment-clock/run.py convention.
 
 Usage (from the sophie-pipeline root):
-    poetry run python sophie-agent/run.py                          # generalist REPL
-    poetry run python sophie-agent/run.py --agent supervisor
-    poetry run python sophie-agent/run.py --agent option_strategist --model claude-sonnet-5
-    poetry run python sophie-agent/run.py --all-local               # every profile on Ollama qwen3.5
-    poetry run python sophie-agent/run.py --as-of 2023-06-30 --agent quant
-    poetry run python sophie-agent/run.py --list-agents
-    poetry run python sophie-agent/run.py --list-tools --agent generalist
-    poetry run python sophie-agent/run.py --check-models
+    poetry run python sophie_agent/run.py                          # generalist REPL
+    poetry run python sophie_agent/run.py --agent supervisor
+    poetry run python sophie_agent/run.py --agent option_strategist --model claude-sonnet-5
+    poetry run python sophie_agent/run.py --all-local               # every profile on Ollama qwen3.5
+    poetry run python sophie_agent/run.py --as-of 2023-06-30 --agent quant
+    poetry run python sophie_agent/run.py --list-agents
+    poetry run python sophie_agent/run.py --list-tools --agent generalist
+    poetry run python sophie_agent/run.py --check-models
 """
 
 import argparse

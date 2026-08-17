@@ -2,8 +2,8 @@
 """Entrypoint for the AG-UI server — LOCAL-ONLY. Binds 127.0.0.1, never 0.0.0.0.
 
 Usage (from the sophie-pipeline root):
-    poetry run python sophie-agent/serve.py
-    poetry run python sophie-agent/serve.py --port 8001
+    poetry run python sophie_agent/serve.py
+    poetry run python sophie_agent/serve.py --port 8001
 """
 
 import argparse
