@@ -54,9 +54,14 @@ def _get_runtime(thread_id: str) -> AgentRuntime:
 
 
 def _convert_history(messages: list) -> list:
-    """AG-UI history -> LangChain chat_history. System/tool/developer messages are dropped: the
-    agent supplies its own system prompt, and tool observations are already folded into the prior
-    assistant text the model produced from them."""
+    """AG-UI history -> LangChain messages, used only to SEED a thread the agent has no checkpoint
+    for (see run_agent). System/tool/developer messages are dropped: the agent supplies its own
+    system prompt, and tool observations are already folded into the prior assistant text.
+
+    Normally the agent's checkpointer is the source of truth for a thread's history — which is
+    strictly better than rebuilding from the client, because it retains ToolMessages that AG-UI's
+    message list does not carry. Seeding only matters when the server restarted mid-conversation
+    and the client still holds transcript the checkpointer lost."""
     converted = []
     for m in messages:
         if isinstance(m, UserMessage):
@@ -113,10 +118,12 @@ def _is_embedding_model(name: str) -> bool:
 def get_models() -> dict:
     """Return live discovered Ollama models alongside configured models.
 
-    Only models that actually support tool calling are returned — sophie_agent's toolkits are
-    exposed via bind_tools()/create_tool_calling_agent(), so a model without tool-calling support
-    (e.g. deepseek-reasoner / any local R1 distill) can't drive this agent at all, and listing it
-    would just be a picker entry that silently produces prose-only, tool-less runs.
+    Only models that actually support tool calling are returned — sophie_agent's toolkits reach the
+    model via create_agent's bind_tools path, so a model without tool-calling support (e.g.
+    deepseek-reasoner / any local R1 distill) can't drive this agent at all, and listing it would
+    just be a picker entry that silently produces prose-only, tool-less runs. build_chat_model()
+    refuses such a model outright, so selecting one would now surface as an error rather than a
+    quietly degraded run.
     """
     ollama_tags = []
     try:
@@ -201,19 +208,26 @@ async def run_agent(
 
     agent = runtime.build_agent(profile, **overrides)
 
-    history = _convert_history(input_data.messages[:-1])
-    agent.chat_history = history
-
     latest = input_data.messages[-1] if input_data.messages else None
     user_text = latest.content if isinstance(latest, UserMessage) else ""
+
+    # The checkpointer owns this thread's history. Only seed it from the client's resent transcript
+    # when there is no checkpoint yet, so a mid-conversation server restart doesn't lose context —
+    # and so a normal turn doesn't append a duplicate copy of everything the client resent.
+    thread_id = input_data.thread_id
+    seed_history = None
+    if not agent.has_history(thread_id):
+        seed_history = _convert_history(input_data.messages[:-1])
 
     async def event_generator():
         encoder = EventEncoder()
         async for event in stream_agui_events(
             agent=agent,
             message=user_text,
-            thread_id=input_data.thread_id,
+            thread_id=thread_id,
             run_id=input_data.run_id,
+            context=runtime.root_context(),
+            seed_history=seed_history,
         ):
             yield encoder.encode(event)
 

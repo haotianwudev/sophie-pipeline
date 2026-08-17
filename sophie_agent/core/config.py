@@ -52,6 +52,13 @@ class AgentConfig:
     allow_python: bool = field(
         default_factory=lambda: os.environ.get("SOPHIE_AGENT_ALLOW_PYTHON", "1") not in ("0", "false", "False")
     )
+    # The sqlite LLM cache is keyed on (prompt, llm_string) and persists across processes, which is
+    # what makes repeated research cheap. It must be switchable off for tests: a cached reply is
+    # replayed without the model being called at all, so any test asserting on call counts or on a
+    # scripted model's sequence becomes dependent on cache state left behind by earlier runs.
+    llm_cache: bool = field(
+        default_factory=lambda: os.environ.get("SOPHIE_AGENT_LLM_CACHE", "1") not in ("0", "false", "False")
+    )
     max_workers: int = field(default_factory=lambda: int(os.environ.get("SOPHIE_AGENT_MAX_WORKERS", "4")))
     as_of: str | None = field(default_factory=lambda: os.environ.get("SOPHIE_AGENT_AS_OF") or None)
     token_budget: int | None = field(

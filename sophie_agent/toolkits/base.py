@@ -1,7 +1,19 @@
 """SophieToolkit — the base every data toolkit subclasses.
 
-BaseToolkit is a pydantic v2 model in langchain-core 0.3, so subclasses need
-arbitrary_types_allowed to hold a DataFrameStore / RunContext / AgentConfig.
+A toolkit is a stateless *declaration* of tools. It holds no run state: everything a tool needs at
+call time (RunContext/as_of, the DataFrameStore, AgentConfig) arrives through the
+`runtime: ToolRuntime` parameter LangGraph injects, as `runtime.context` — a
+`context.agent_context.SophieContext`.
+
+That parameter is injected by name+annotation and is automatically excluded from the JSON schema the
+model sees, so it never appears as a tool argument the LLM could set.
+
+IMPORTANT — tools here must NOT pass `args_schema=` to `@tool`. Verified against
+langchain 1.3.15: supplying an explicit `args_schema` makes LangChain treat it as the verbatim
+invocation contract and skip registering `runtime` for injection, so the tool fails at call time
+with `TypeError: missing 1 required positional argument: 'runtime'`. Declare argument types,
+constraints, and descriptions with `Annotated[T, Field(...)]` on the signature instead — that
+produces an identical JSON schema (bounds and descriptions included) from a single source of truth.
 """
 
 from __future__ import annotations
@@ -9,24 +21,10 @@ from __future__ import annotations
 from typing import ClassVar
 
 from langchain_core.tools import BaseTool, BaseToolkit
-from pydantic import ConfigDict, SkipValidation
-
-from ..context.runcontext import RunContext
-from ..context.store import DataFrameStore
-from ..core.config import AgentConfig
 
 
 class SophieToolkit(BaseToolkit):
-    model_config = ConfigDict(arbitrary_types_allowed=True)
-
     toolkit_name: ClassVar[str] = "base"
-
-    store: DataFrameStore
-    # SkipValidation: RunContext is a stdlib dataclass nesting a threading.Lock (inside
-    # UsageTracker) — pydantic's auto dataclass-schema generation can't model a Lock and warns.
-    # We want RunContext held opaquely and mutated by reference anyway, never validated/coerced.
-    run_ctx: SkipValidation[RunContext]
-    config: AgentConfig
 
     def get_tools(self) -> list[BaseTool]:  # pragma: no cover - overridden by subclasses
         raise NotImplementedError

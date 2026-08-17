@@ -5,8 +5,7 @@ edit anywhere else.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import Type
+from dataclasses import dataclass
 
 from pydantic import BaseModel
 
@@ -24,9 +23,16 @@ class AgentProfile:
     model_name: str | None = None
     provider: ModelProvider | None = None
     system_prompt: str = ""
-    answer_model: Type[BaseModel] | None = None
+    answer_model: type[BaseModel] | None = None
+    # Enforced by ModelCallLimitMiddleware(run_limit=...) in SophieAgent. Was silently ignored
+    # between the AgentExecutor -> create_agent migration and this change.
     max_iterations: int = 15
     can_delegate: bool = False
+    # Models to fall back to, in order, when this profile's primary model call fails — wired to
+    # ModelFallbackMiddleware. Empty means no fallback (the default; a failure surfaces as an
+    # error). Useful for e.g. surviving an expired remote API key by dropping to a local Ollama
+    # model: fallback_models=("qwen3.5:latest",).
+    fallback_models: tuple[str, ...] = ()
     # Single emoji shown as this agent's persona in the chat widget whenever SOPHIE (the
     # supervisor) delegates to it — see GET /agents in server.py and docs/SOPHIE_AGENT.md's
     # "Persona-per-delegation" section. Purely cosmetic; never read by any agent/toolkit code.

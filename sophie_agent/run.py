@@ -20,8 +20,14 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from src.llm.models import AVAILABLE_MODELS, OLLAMA_MODELS, ModelProvider  # noqa: E402
-from sophie_agent import DEFAULT_CONFIG, AGENT_PROFILES, AgentRuntime, RunContext  # noqa: E402
+from src.llm.models import AVAILABLE_MODELS, ModelProvider  # noqa: E402
+from sophie_agent import (  # noqa: E402
+    AGENT_PROFILES,
+    DEFAULT_CONFIG,
+    AgentRuntime,
+    RunContext,
+    provider_from_str,
+)
 from sophie_agent.cli import run_repl  # noqa: E402
 
 
@@ -36,7 +42,7 @@ def _print_agents() -> None:
 def _print_tools(runtime: AgentRuntime, agent_key: str) -> None:
     agent = runtime.build_agent(agent_key)
     print(f"--- system prompt for '{agent_key}' ---\n")
-    print(agent._system_message())
+    print(agent.preview_system_prompt())
     print(f"\n--- {len(agent.tools)} tools ---")
     for t in agent.tools:
         print(f"- {t.name}: {t.description.splitlines()[0]}")
@@ -96,8 +102,6 @@ def main() -> None:
         _check_models()
         return
 
-    from sophie_agent.runcontext import RunContext
-
     force_model, force_provider = (None, None)
     if args.all_local:
         force_model, force_provider = "qwen3.5:latest", ModelProvider.OLLAMA
@@ -112,14 +116,11 @@ def main() -> None:
         _print_tools(runtime, args.agent)
         return
 
-    provider = None
-    if args.provider:
-        for p in ModelProvider:
-            if p.value.lower() == args.provider.lower() or p.name.lower() == args.provider.lower():
-                provider = p
-                break
+    provider = provider_from_str(args.provider) if args.provider else None
 
-    agent = runtime.build_agent(args.agent, model_name=args.model, provider=provider, verbose=args.verbose)
+    agent = runtime.build_agent(
+        args.agent, model_name=args.model, provider=provider, verbose=args.verbose
+    )
     run_repl(agent)
 
 

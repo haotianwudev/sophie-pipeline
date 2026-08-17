@@ -59,13 +59,35 @@ Toolkits are capability ("how to fetch the SPX chain"); context is knowledge (th
 already fetched and sits in `chain_1`, and that everything must be as of a given date). Conflating
 them is why multi-tool agents re-fetch everything every turn and leak look-ahead bias.
 
-### Backbone — `agent.py`
+### Backbone — `core/agent.py`
 
-One `SophieAgent` class. LLM comes from `src/llm/models.py::get_model()` — reused, not
-reimplemented. Loop is `create_tool_calling_agent` → `AgentExecutor` (`return_intermediate_steps=True`
-so the eval harness can assert on tool trajectory, not just final text). Prompt is assembled by the
-context layer, not hardcoded in the class. `chat()` returns prose, `structured()` returns a typed
-pydantic answer, `stream()` uses `astream_events` v2.
+One `SophieAgent` class, deliberately thin: `create_agent` accepts `system_prompt`, `middleware`,
+`response_format`, `context_schema`, `checkpointer`, `store` and `cache`, so almost everything this
+class used to implement by hand is now configuration passed to it.
+
+| Was hand-rolled | Now |
+|---|---|
+| manual `SystemMessage` prepend each turn | `@dynamic_prompt` middleware (the prompt genuinely varies per turn — store listing + as_of) |
+| `self.chat_history` list, rebuilt by the server | `checkpointer=InMemorySaver()` + `thread_id`; also retains `ToolMessage`s, which the list dropped |
+| `structured()` running the loop then a **2nd** LLM call to repackage | `response_format=ToolStrategy(...)` — one graph, with validation retry |
+| `max_iterations` (accepted, then silently ignored) | `ModelCallLimitMiddleware(run_limit=..., exit_behavior="end")` |
+| nothing — context grew unbounded | `ContextEditingMiddleware([ClearToolUsesEdit(...)])` |
+| a fallback-model *hint* inside an error string | `ModelFallbackMiddleware(...)`, opt-in per profile via `AgentProfile.fallback_models` |
+| `_extract_steps()` tracking a parallel trajectory | `tool_trajectory(messages)` derives it — the messages already *are* the trajectory |
+| 6-branch provider factory | `core/models.py::build_chat_model` → `init_chat_model` |
+
+Tools declare their arguments with `Annotated[T, Field(...)]` on the signature, **not** a separate
+`args_schema=` model. This is required, not cosmetic: passing an explicit `args_schema` makes
+LangChain treat it as the verbatim invocation contract and skip `ToolRuntime` injection, so the tool
+dies at call time with `TypeError: missing 1 required positional argument: 'runtime'`. The inferred
+schema is identical — `minimum`/`maximum`/`exclusiveMinimum`/`enum`/descriptions all survive — and
+being a single declaration it cannot drift from the function that consumes it (it already had:
+`delegate_parallel` declared `list[ParallelTaskItem]` while its signature said
+`list[dict | ParallelTaskItem]`, which is why it carried an `isinstance` ladder handling three shapes).
+
+`chat()` returns prose, `structured()` a validated pydantic answer, `stream()` yields
+`astream_events` v2 events. **v2 is correct, not stale**: v3 exists but its own docstring marks it
+beta, and `ag_ui_mapper.py` is built on measured v2 shapes.
 
 ### Provider matrix — local models are first-class
 
@@ -102,12 +124,25 @@ An `AgentProfile` is a subset of toolkits + a model + a role prompt + an answer 
 an agent is a data edit. Shipping profiles: `wiki_researcher` (local, free), `option_strategist`,
 `quant`, `market_analyst` (DeepSeek API), `generalist`, and `supervisor` (`can_delegate=True`).
 
-`AgentRuntime` builds agents from profiles, caches them, and threads a `RunContext` (as_of, depth,
-budget, usage) through every one. `DelegationToolkit` exposes `list_agents`, `delegate`, and
-`delegate_parallel` (bounded `ThreadPoolExecutor`, fresh `AgentExecutor` per task, shared
-`DataFrameStore` behind a lock). Guards: depth limit, no delegating to another `can_delegate` profile,
-bounded concurrency, a token budget that aborts cleanly with partial results, and only final answers
-— never raw tool traces — flow back into the supervisor's context.
+`AgentRuntime` builds agents from profiles and caches both them and their toolkits, supplying a
+`SophieContext` per invocation instead of per construction. `DelegationToolkit` exposes `list_agents`,
+`delegate`, and `delegate_parallel`. Guards: depth limit, no delegating to another `can_delegate`
+profile, bounded concurrency, a token budget checked before each spawn, and only final answers —
+never raw tool traces — flow back into the supervisor's context.
+
+Parallel fan-out no longer needs a fresh executor per task. Specialists are shared cached
+`CompiledStateGraph`s, which is safe because a LangGraph agent holds no per-run state: each task gets
+its own child `SophieContext` (own `RunContext`, shared usage accumulator) and its own `thread_id`, and
+the `DataFrameStore` they all write into is lock-guarded. `delegate_parallel` uses
+`ThreadPoolExecutor.map`, which preserves submission order — deleting the `as_completed` +
+index-bookkeeping version, and with it the `isinstance` ladder that coped with `tasks` arriving as
+`ParallelTaskItem` | `dict` | bare `str`. With one schema declaration it is always a `ParallelTask`.
+
+Hand-rolling delegation remains correct here, checked rather than assumed: `langgraph-supervisor`,
+`langgraph-swarm` and `deepagents` are not installed, and langchain 1.3.15 ships no subagent
+middleware. `CompiledStateGraph.as_tool()` does exist, but would give up the shared `DataFrameStore`
+and the shared cross-tree usage accumulator, which are the point of this design. The persona-card UX
+also depends on the exact `delegate`/`delegate_parallel` tool-call shapes.
 
 ### Toolkits — `toolkits/`
 
@@ -125,35 +160,78 @@ Five `SophieToolkit(BaseToolkit)` subclasses, each contributing a `system_prompt
 - **DataFrame** — list/schema/head plus a full Python REPL (`ast`-based, `PythonAstREPLTool`-style)
   over every DataFrame the session has produced. Executes arbitrary Python in-process by design —
   gated by `SOPHIE_AGENT_ALLOW_PYTHON`, documented plainly, not pretended-safe.
-- **MarketData** — read-only guarded SQL against the market-data Postgres (curated table list, `SELECT`/`WITH`
-  only, `READ ONLY` transaction, auto-`LIMIT`, `as_of` auto-injected on `biz_date` columns) plus
-  GraphQL against the prod Apollo endpoint.
+- **MarketData** — read-only guarded SQL against the market-data Postgres (curated table list,
+  `SELECT`/`WITH` only, `READ ONLY` transaction, auto-`LIMIT`, real `as_of` clamping on `biz_date`
+  tables) plus GraphQL against the prod Apollo endpoint.
 
-### Context — `store.py`, `runcontext.py`, prompt assembly
+  **The `as_of` clamp used to be a no-op and silently permitted look-ahead bias.** The injected
+  wrapper was `SELECT * FROM (<query>) AS _as_of_wrapped WHERE TRUE` — `WHERE TRUE` filters nothing,
+  while the tool docstring, the toolkit prompt fragment, and `runcontext.py`'s own docstring all
+  promised clamping. Every `--as-of` run touching `prices`/`technicals`/`option_research_run`/etc.
+  could read rows dated after `as_of`. It now enforces one of three outcomes, never a silent pass:
+  the query carries its own `biz_date <= DATE '...'` bound that is **verified** to be no later than
+  `as_of`; or it gets wrapped in a real `WHERE _pit_guarded.biz_date <= DATE '<as_of>'` filter; or —
+  for a bound that reaches past `as_of` — it is **rejected** with an explanatory message. An
+  aggregate projects no `biz_date` for the wrapper to act on, so it fails loudly and
+  `_explain_sql_error` tells the model to write the bound itself. Structural checks (`;`,
+  `LIMIT`) run against a literal-blanked copy of the query, with date literals deliberately preserved
+  so the bound stays detectable — getting that backwards is what made the first version of this fix
+  fail its own tests.
 
-`RunContext` carries `as_of` as injected state the model cannot widen. `DataFrameStore` is the spine
-of the tool design: bulk results (an 18k-contract chain, a thousand-row SQL result) never enter the
-model's context directly — every bulk tool registers a handle and returns only shape + preview.
-One store per `AgentRuntime`, shared across every spawned agent, thread-safe for `delegate_parallel`.
-System-prompt assembly concatenates the profile's role prompt, every attached toolkit's fragment, the
-current `as_of` and what it forbids, and a live listing of store handles.
+### Context — `agent_context.py`, `store.py`, `runcontext.py`
+
+`SophieContext` (`context/agent_context.py`) bundles `run_ctx` + `store` + `config` (+ the
+`AgentRuntime`, for delegation only) and is passed **per invocation** as `create_agent`'s
+`context_schema`. Tools read it via a `runtime: ToolRuntime` parameter that LangGraph injects and
+that never appears in the model-facing schema.
+
+This replaced holding those three as pydantic fields on every toolkit, which cost two things:
+
+- **Toolkits and agents had to be rebuilt for every `delegate()` call**, because each sub-agent needs
+  its own `RunContext` and the `RunContext` was a constructor field. `WikiToolkit`'s module-level
+  `lru_cache` existed only to stop that from re-parsing 240 markdown files per delegated task. Both
+  are now cached in `AgentRuntime` and built once.
+- **A pile of pydantic workarounds** to hold a lock-bearing dataclass inside a `BaseToolkit`:
+  `arbitrary_types_allowed`, `SkipValidation[RunContext]`, and a
+  `DelegationToolkit.model_rebuild(_types_namespace={...})` call in `runtime.py`. All deleted.
+
+`RunContext` still carries `as_of` as injected state the model cannot widen. `DataFrameStore` remains
+the spine of the tool design: bulk results (an 18k-contract chain, a thousand-row SQL result) never
+enter the model's context — every bulk tool registers a handle and returns only shape + preview. One
+store per `AgentRuntime`, shared across every spawned agent, thread-safe for `delegate_parallel`.
+Prompt assembly now lives in the `@dynamic_prompt` middleware and runs every turn (the store listing
+and as_of banner both change mid-run); `SophieAgent.preview_system_prompt()` reproduces it for
+`run.py --list-tools`, and an offline test asserts the two agree.
+
+Note this is also why `ClearToolUsesEdit` is safe here specifically: clearing older tool *text* from
+the message history loses nothing, because the payload was never in the messages — it is in the store
+under a handle that stays valid.
 
 ### Cross-cutting rigor
 
 1. **Deterministic math** — the LLM never computes; every number comes from `options/payoff.py`,
    pandas, or SQL.
-2. **Typed outputs** (`schemas.py`) — `StrategyRecommendation` with a required non-empty `evidence`
-   list and an `evidence_strength: backtested | conventional | unsupported` field that operationalises
-   the 0.10/0.16-vs-retail-default distinction.
+2. **Typed outputs** (`core/schemas.py`) — `StrategyRecommendation` with a non-empty `evidence` list
+   and an `evidence_strength: backtested | conventional | unsupported` field that operationalises
+   the 0.10/0.16-vs-retail-default distinction. Constraints are declared as `Field(min_length=1)` /
+   `Field(ge=0, le=1)` rather than `field_validator` hooks, because `response_format` binds these
+   models as an output tool — anything expressible in the JSON schema is part of the contract the
+   model *sees*, whereas a validator is invisible until after it has already answered.
 3. **Eval harness** (`test/agent_evals/cases.yaml`) — ~30 golden questions asserting on
    `intermediate_steps` (tool trajectory), not just final text.
 4. **Tracing + cost** — LangSmith via env only, off by default; a custom `UsageCallbackHandler`
-   since `get_openai_callback` is OpenAI-only.
-5. **Caching** — `temperature=0`; a hand-rolled `SqliteCache(BaseCache)` (no `langchain-community`
-   available) plus a tool-level disk cache keyed by `(tool, args, as_of)`.
+   since `get_openai_callback` is OpenAI-only. Usage is also reported to the UI on AG-UI's
+   `RunFinished`/`RunError` `usage` field (see Phase 2).
+5. **Caching** — `temperature=0`; a hand-rolled `SqliteCache(BaseCache)` (still justified:
+   `langchain-core` ships only `InMemoryCache`, and neither `langchain-community` nor
+   `langchain-classic` is installed) plus a tool-level disk cache keyed by `(tool, args, as_of)`.
+   Disable with `SOPHIE_AGENT_LLM_CACHE=0` — **required for tests**, since the sqlite cache persists
+   across processes and replays a cached reply without invoking the model at all, which silently made
+   call-count assertions depend on what earlier runs left behind.
 6. **Streaming** — `astream_events(version="v2")`.
 7. **Run records** — `runs/<run_id>.json`, mirroring the `config_hash` reproducibility culture already
-   in `sophie-option-research`.
+   in `sophie-option-research`. Written for streamed runs too; previously only `invoke()` wrote them,
+   so the chat widget — which is 100% `stream()` — produced none at all.
 
 ## Extension seam
 
@@ -193,10 +271,19 @@ that picker was removed), `POST /agent/{profile}` →
 `localhost:3000`. `serve.py` never passes `host="0.0.0.0"`.
 
 A `thread_id -> AgentRuntime` LRU registry (cap 50) keeps `DataFrameStore` alive across turns within
-a thread — a chain pulled in turn 1 is still queryable in turn 3. Chat history is *not* tracked
-server-side: AG-UI resends the full message list every run, so each request rebuilds
-`agent.chat_history` from `input_data.messages[:-1]` (`_convert_history` in `server.py`) rather than
-double-tracking against what the client believes it sent.
+a thread — a chain pulled in turn 1 is still queryable in turn 3.
+
+**History is now the checkpointer's, keyed by the same AG-UI `thread_id`.** Only the newest message is
+passed in; `_convert_history` is used *only* to seed a thread the agent has no checkpoint for, which
+happens when the server restarted mid-conversation while the client still holds the transcript
+(`agent.has_history(thread_id)` gates it). This is strictly better than rebuilding from the client
+every turn, because AG-UI's message list carries no `ToolMessage`s — verified live: turn 1 called
+`wiki_search` and cited `option-strategy/gex`; turn 2 answered "what path did you cite?" correctly
+with **zero** tool calls, straight from retained state.
+
+`RunFinished`/`RunError` now also carry AG-UI's `usage: [TokenUsage]`, populated from
+`RunContext.usage`. Those counts were already being accumulated and then discarded, so the UI had no
+way to show run cost. (Note the count is cumulative for the thread's runtime, not per-turn.)
 
 ### Event mapper — `ag_ui_mapper.py`
 
@@ -392,7 +479,7 @@ the same time:
   `supports_tool_calling() == False` via `LLMModel.supports_tool_calling()` (`src/llm/models.py`) —
   but `get_models()` still listed them, just with the flag set to `false`, and the frontend rendered
   that as an amber "No tools (reasoning / chat only)" warning rather than hiding the entry. Since
-  sophie_agent's entire toolkit surface is exposed via `bind_tools()`/`create_tool_calling_agent()`,
+  sophie_agent's entire toolkit surface reaches the model via `create_agent`'s `bind_tools` path,
   a model without tool-calling support can't drive this agent at all — selecting one wouldn't error,
   it would just silently run tool-less, prose-only turns. `get_models()` now drops any model (Ollama
   or remote) whose `supports_tool_calling()` is `False` instead of listing it as a trap option; every
@@ -551,7 +638,9 @@ sophie_agent/
   __init__.py  run.py  serve.py  eval.py
   docs/        SOPHIE_AGENT.md
   core/        __init__.py  agent.py  runtime.py  profiles.py  config.py  schemas.py  callbacks.py
+               models.py            <- build_chat_model() via init_chat_model + the tool-calling gate
   context/     __init__.py  runcontext.py  store.py  wiki_store.py  cache.py  run_record.py
+               agent_context.py     <- SophieContext, create_agent's context_schema
   server/      __init__.py  server.py  ag_ui_mapper.py
   cli/         __init__.py  cli.py
   options/     __init__.py  presets.py  payoff.py  liquidity.py  historical.py  chain_types.py
@@ -563,9 +652,16 @@ sophie_agent/
                dataframe/  __init__.py  toolkit.py
                market/     __init__.py  toolkit.py
                delegate/   __init__.py  toolkit.py
-test/          test_sophie_agent.py  test_ag_ui.py
+test/          conftest.py  test_sophie_agent.py  test_ag_ui.py  test_tool_schemas.py
 test/agent_evals/  cases.yaml
 ```
+
+There are no per-toolkit `schemas.py` modules: tool argument schemas are inferred from
+`Annotated[...]` signatures (see the Backbone section for why an explicit `args_schema` is
+incompatible with `ToolRuntime` injection). `test_tool_schemas.py` asserts on the provider-facing
+schema via `convert_to_openai_tool()` — note `tool.args_schema.model_json_schema()` raises, because
+the inferred model still carries the injected `runtime` field whose callable members have no JSON
+Schema representation.
 
 ```
 ai-stock-suggestion-client/src/components/chat/
@@ -576,7 +672,9 @@ ai-stock-suggestion-client/src/components/chat/
 
 Reused, not reimplemented: `src/tools/api_db.py::get_db_connection`,
 `src/tools/api_cboe.py::{get_spx_metadata, get_spx_option_chain, calculate_spx_gex}`,
-`src/llm/models.py::{get_model, ModelProvider}`,
+`src/llm/models.py::{ModelProvider, get_model_info}` (for the empirical `supports_tool_calling()`
+gate — chat-model *construction* goes through `init_chat_model`, not `get_model`; `get_model` is left
+untouched because the 15 analyst agents depend on its exact Ollama sampling defaults),
 `ai-stock-suggestion-client/src/lib/options/payoff.ts::{legsPnL, findBreakevens}`,
 `ai-stock-suggestion-client/src/components/wiki/wiki-markdown.tsx` (plugin trio + component map),
 `ai-stock-suggestion-client/src/components/ui/sticky-podcast-player.tsx` (widget geometry).

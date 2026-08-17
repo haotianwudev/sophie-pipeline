@@ -1,196 +1,363 @@
-"""SophieAgent — the backbone. One class; everything domain-specific is injected via toolkits,
-profile, and RunContext. See docs/SOPHIE_AGENT.md for the four-layer design this sits in.
+"""SophieAgent — the backbone. One class; everything domain-specific is injected via toolkits, the
+profile, and the per-invocation SophieContext. Built on LangChain 1.x `create_agent`.
+
+This class deliberately owns as little machinery as possible — `create_agent` accepts
+`system_prompt`, `middleware`, `response_format`, `context_schema`, `checkpointer`, `store` and
+`cache`, so the pieces that used to be hand-rolled here are now configuration:
+
+  hand-rolled before                -> package feature now
+  ---------------------------------    ---------------------------------------------------
+  manual SystemMessage prepend         `@dynamic_prompt` middleware (prompt varies per turn:
+                                       the store listing and as_of change between calls)
+  `self.chat_history` list             `checkpointer=` + `thread_id`, which also preserves
+                                       ToolMessages across turns (the manual list dropped them)
+  `structured()`'s 2nd LLM call        `response_format=ToolStrategy(...)`
+  `max_iterations` (silently unused)   `ModelCallLimitMiddleware(run_limit=...)`
+  nothing (context grew unbounded)     `ContextEditingMiddleware([ClearToolUsesEdit(...)])`
+  a fallback-model *hint* in an error  `ModelFallbackMiddleware(...)` when a profile opts in
+
+`intermediate_steps` is still exposed, because the eval harness asserts on tool trajectory — but it
+is now derived from the message list rather than tracked separately.
 """
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Any, AsyncIterator, Type
 
-from langchain.agents import AgentExecutor, create_tool_calling_agent
-from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain.agents import create_agent
+from langchain.agents.middleware import (
+    ClearToolUsesEdit,
+    ContextEditingMiddleware,
+    ModelCallLimitMiddleware,
+    ModelFallbackMiddleware,
+    dynamic_prompt,
+)
+from langchain.agents.structured_output import ToolStrategy
+from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, ToolMessage
 from langchain_core.tools import BaseTool
+from langgraph.checkpoint.memory import InMemorySaver
 from pydantic import BaseModel
 
-from src.llm.models import ModelProvider, get_model, get_model_info
-
+from ..context.agent_context import SophieContext
 from ..context.run_record import write_run_record
-from ..context.runcontext import RunContext
 from .callbacks import UsageCallbackHandler
 from .config import DEFAULT_CONFIG, AgentConfig
+from .models import ToolCallingNotSupportedError, build_chat_model, provider_from_str
+
+__all__ = ["SophieAgent", "ToolAction", "ToolCallingNotSupportedError", "tool_trajectory"]
+
+DEFAULT_THREAD_ID = "default"
 
 
-class ToolCallingNotSupportedError(RuntimeError):
-    """Raised at construction time rather than letting a non-tool-calling model silently loop."""
+@dataclass(frozen=True)
+class ToolAction:
+    """A tool invocation, for trajectory inspection by the eval harness."""
+
+    tool: str
+    tool_input: Any
+    log: str = ""
 
 
-_FALLBACKS = {
-    ModelProvider.OLLAMA: "qwen3.5:latest",
-    ModelProvider.DEEPSEEK: "deepseek-chat",
-}
+def tool_trajectory(messages: list[BaseMessage]) -> list[tuple[ToolAction, str]]:
+    """Reconstruct (action, observation) pairs from a message list, newest last.
+
+    The messages *are* the trajectory in LangChain 1.x — this derives the legacy
+    `intermediate_steps` shape from them rather than maintaining a parallel record.
+    """
+    observations = {
+        m.tool_call_id: (m.content if isinstance(m.content, str) else str(m.content))
+        for m in messages
+        if isinstance(m, ToolMessage) and getattr(m, "tool_call_id", None)
+    }
+    steps: list[tuple[ToolAction, str]] = []
+    for m in messages:
+        if isinstance(m, AIMessage) and getattr(m, "tool_calls", None):
+            for tc in m.tool_calls:
+                steps.append(
+                    (
+                        ToolAction(tool=tc.get("name", ""), tool_input=tc.get("args", {})),
+                        observations.get(tc.get("id", ""), ""),
+                    )
+                )
+    return steps
 
 
-def _provider_from_str(value: str | ModelProvider) -> ModelProvider:
-    if isinstance(value, ModelProvider):
-        return value
-    for p in ModelProvider:
-        if p.value.lower() == str(value).lower() or p.name.lower() == str(value).lower():
-            return p
-    raise ValueError(f"Unknown model provider '{value}'.")
+def _final_text(messages: list[BaseMessage]) -> str:
+    if not messages:
+        return ""
+    last = messages[-1]
+    return last.content if isinstance(last.content, str) else str(last.content)
 
 
 class SophieAgent:
     def __init__(
         self,
+        default_context: SophieContext,
         toolkits: list | None = None,
         model_name: str | None = None,
-        provider: str | ModelProvider | None = None,
+        provider: str | None = None,
         config: AgentConfig | None = None,
-        run_ctx: RunContext | None = None,
         system_prompt: str | None = None,
         answer_model: Type[BaseModel] | None = None,
         name: str = "sophie",
         verbose: bool = False,
         max_iterations: int = 15,
         record_runs: bool = True,
+        fallback_models: tuple[str, ...] = (),
+        llm: Any = None,
     ) -> None:
+        """`llm` injects a prebuilt chat model instead of constructing one from
+        model_name/provider — used by the offline test suite, and by any caller that already holds a
+        configured model."""
         self.name = name
         self.record_runs = record_runs
         self.config = config or DEFAULT_CONFIG
-        self.run_ctx = run_ctx or RunContext(token_budget=self.config.token_budget)
         self.answer_model = answer_model
         self.toolkits = toolkits or []
+        # The context this agent uses when a caller doesn't pass one. Delegated sub-agents always
+        # get an explicit child context instead, which is why this can be a shared cached agent.
+        self.default_context = default_context
 
         self.tools: list[BaseTool] = []
         seen: set[str] = set()
         for tk in self.toolkits:
             for t in tk.get_tools():
                 if t.name in seen:
-                    raise ValueError(f"Duplicate tool name '{t.name}' across toolkits attached to agent '{name}'.")
+                    raise ValueError(
+                        f"Duplicate tool name '{t.name}' across toolkits attached to agent '{name}'."
+                    )
                 seen.add(t.name)
                 self.tools.append(t)
 
-        resolved_provider = _provider_from_str(provider or self.config.default_provider)
-        resolved_model_name = model_name or self.config.default_model_name
-        self._model_name = resolved_model_name
-        self._provider = resolved_provider
+        self._model_name = model_name or self.config.default_model_name
+        self._provider = provider_from_str(provider or self.config.default_provider)
+        self.llm = llm if llm is not None else build_chat_model(self._model_name, self._provider)
 
-        model_info = get_model_info(resolved_model_name)
-        if model_info is not None and not model_info.supports_tool_calling():
-            alt = _FALLBACKS.get(resolved_provider, "claude-sonnet-5")
-            raise ToolCallingNotSupportedError(
-                f"Model '{resolved_model_name}' ({resolved_provider.value}) does not support tool "
-                f"calling. Try '{alt}' instead, or a different provider."
-            )
-
-        llm_kwargs: dict[str, Any] = {"temperature": 0}
-        if resolved_provider == ModelProvider.OLLAMA:
-            llm_kwargs = {"num_ctx": 16384, "temperature": 0, "stop": None}
-        self.llm = get_model(resolved_model_name, resolved_provider, **llm_kwargs)
-
-        self._usage_callback = UsageCallbackHandler(self.run_ctx)
-        self._base_system_prompt = system_prompt or "You are Sophie, a research assistant over the Sophie finance platform."
+        self._base_system_prompt = system_prompt or (
+            "You are Sophie, a research assistant over the Sophie finance platform."
+        )
         self._fragments = "\n\n".join(
             f for tk in self.toolkits for f in [tk.system_prompt_fragment()] if f
         )
+        self._max_iterations = max_iterations
+        self._fallback_models = fallback_models
+        self._verbose = verbose
 
-        prompt = ChatPromptTemplate.from_messages(
-            [
-                ("system", "{system_message}"),
-                MessagesPlaceholder("chat_history"),
-                ("human", "{input}"),
-                MessagesPlaceholder("agent_scratchpad"),
-            ]
-        )
-        agent = create_tool_calling_agent(self.llm, self.tools, prompt)
-        self.executor = AgentExecutor(
-            agent=agent,
+        self._checkpointer = InMemorySaver()
+        self.agent = create_agent(
+            model=self.llm,
             tools=self.tools,
-            verbose=verbose,
-            handle_parsing_errors=True,
-            return_intermediate_steps=True,
-            max_iterations=max_iterations,
+            middleware=self._build_middleware(),
+            context_schema=SophieContext,
+            checkpointer=self._checkpointer,
+            debug=verbose,
         )
-        self.chat_history: list[BaseMessage] = []
+        # Built lazily per answer schema by structured(); a response_format-bound graph always
+        # returns typed output, so it can't double as the prose graph above.
+        self._structured_agents: dict[type, Any] = {}
 
-    def _store_listing(self) -> str:
-        for tk in self.toolkits:
-            store = getattr(tk, "store", None)
-            if store is not None:
-                return store.context_listing()
-        return "(no DataFrame store attached)"
+    # ---------------------------------------------------------------- prompt / middleware
 
-    def _system_message(self) -> str:
-        return (
-            f"{self._base_system_prompt}\n\n{self._fragments}\n\n"
-            f"{self.run_ctx.prompt_fragment()}\n\n"
-            f"Stored DataFrames (shared across this run):\n{self._store_listing()}"
-        )
+    def _build_middleware(self) -> list:
+        base_prompt = self._base_system_prompt
+        fragments = self._fragments
 
-    def invoke(self, message: str) -> dict:
-        result = self.executor.invoke(
-            {"input": message, "chat_history": self.chat_history, "system_message": self._system_message()},
-            config={"callbacks": [self._usage_callback]},
-        )
-        self.chat_history.append(HumanMessage(content=message))
-        self.chat_history.append(AIMessage(content=result["output"]))
+        @dynamic_prompt
+        def sophie_prompt(request) -> str:
+            """Reassembled every turn: the DataFrame store listing and the point-in-time banner
+            both change as a run progresses, so a static system_prompt would go stale."""
+            ctx: SophieContext = request.runtime.context
+            parts = [
+                base_prompt,
+                fragments,
+                ctx.run_ctx.prompt_fragment(),
+                f"Stored DataFrames (shared across this run):\n{ctx.store.context_listing()}",
+            ]
+            return "\n\n".join(p for p in parts if p)
 
-        if self.record_runs:
-            try:
-                write_run_record(
-                    runs_dir=self.config.runs_dir,
-                    run_id=self.run_ctx.run_id,
-                    agent_name=self.name,
-                    model_name=self._model_name,
-                    provider=self._provider.value,
-                    as_of=self.run_ctx.as_of_iso(),
-                    message=message,
-                    output=result["output"],
-                    intermediate_steps=result.get("intermediate_steps", []),
-                    usage=self.run_ctx.usage.as_dict(),
+        middleware: list = [
+            sophie_prompt,
+            # Replaces the max_iterations parameter that AgentExecutor used to honor and that
+            # create_agent silently ignored. 'end' stops the loop cleanly with whatever the model
+            # has produced, rather than raising mid-run.
+            ModelCallLimitMiddleware(run_limit=self._max_iterations, exit_behavior="end"),
+            # Bulk tool output is the dominant context cost here. Clearing older tool results is
+            # safe in this design precisely because bulk results never lived in the messages: they
+            # live in the DataFrameStore under a handle, which stays valid after the text is cleared.
+            ContextEditingMiddleware(edits=[ClearToolUsesEdit(trigger=120_000, keep=3)]),
+        ]
+        if self._fallback_models:
+            middleware.append(
+                ModelFallbackMiddleware(
+                    *[
+                        build_chat_model(m, self._provider) if ":" not in m else m
+                        for m in self._fallback_models
+                    ]
                 )
-            except Exception:
-                pass  # run records are diagnostic, never fatal to the actual answer
+            )
+        return middleware
 
-        return result
+    @property
+    def model_name(self) -> str:
+        return self._model_name
 
-    def chat(self, message: str) -> str:
-        return self.invoke(message)["output"]
+    @property
+    def provider_name(self) -> str:
+        return self._provider.value
 
-    def structured(self, message: str, model: Type[BaseModel] | None = None) -> BaseModel:
-        """Runs the tool loop to ground every number in a tool call, then asks the LLM to
-        repackage — not recompute — that grounded answer into the typed schema."""
-        target_model = model or self.answer_model
-        if target_model is None:
-            raise ValueError(f"Agent '{self.name}' has no answer_model configured; pass `model` explicitly.")
+    def preview_system_prompt(self, context: SophieContext | None = None) -> str:
+        """Render the system prompt as the model would see it right now.
 
-        result = self.invoke(message)
-        tool_trace = "\n\n".join(
-            f"Tool {action.tool}({action.tool_input}) ->\n{observation}"
-            for action, observation in result.get("intermediate_steps", [])
+        The prompt is assembled by middleware at call time, so there is no static string to print —
+        this reproduces the same assembly for `run.py --list-tools` and for debugging.
+        """
+        ctx = context or self.default_context
+        parts = [
+            self._base_system_prompt,
+            self._fragments,
+            ctx.run_ctx.prompt_fragment(),
+            f"Stored DataFrames (shared across this run):\n{ctx.store.context_listing()}",
+        ]
+        return "\n\n".join(p for p in parts if p)
+
+    # ---------------------------------------------------------------- internals
+
+    def _config(self, thread_id: str | None) -> dict:
+        return {"configurable": {"thread_id": thread_id or DEFAULT_THREAD_ID}}
+
+    def _invoke_config(self, ctx: SophieContext, thread_id: str | None) -> dict:
+        cfg = self._config(thread_id)
+        cfg["callbacks"] = [UsageCallbackHandler(ctx.run_ctx)]
+        return cfg
+
+    def _record(self, ctx: SophieContext, message: str, messages: list[BaseMessage]) -> None:
+        """Run records are diagnostic; a failure here must never lose the actual answer."""
+        if not self.record_runs:
+            return
+        try:
+            write_run_record(
+                runs_dir=self.config.runs_dir,
+                run_id=ctx.run_ctx.run_id,
+                agent_name=self.name,
+                model_name=self._model_name,
+                provider=self._provider.value,
+                as_of=ctx.run_ctx.as_of_iso(),
+                message=message,
+                output=_final_text(messages),
+                intermediate_steps=tool_trajectory(messages),
+                usage=ctx.run_ctx.usage.as_dict(),
+            )
+        except Exception:
+            pass
+
+    # ---------------------------------------------------------------- public API
+
+    def invoke(
+        self,
+        message: str,
+        *,
+        context: SophieContext | None = None,
+        thread_id: str | None = None,
+        seed_history: list[BaseMessage] | None = None,
+    ) -> dict:
+        """Run one turn. Conversation state for `thread_id` is held by the checkpointer, so only
+        the new message is passed in; `seed_history` prepends messages when adopting a history that
+        originated elsewhere (see server.py's AG-UI thread seeding)."""
+        ctx = context or self.default_context
+        inputs = [*(seed_history or []), HumanMessage(content=message)]
+        result = self.agent.invoke(
+            {"messages": inputs},
+            context=ctx,
+            config=self._invoke_config(ctx, thread_id),
         )
+        messages = result.get("messages", [])
+        self._record(ctx, message, messages)
+        return {
+            "output": _final_text(messages),
+            "messages": messages,
+            "intermediate_steps": tool_trajectory(messages),
+        }
 
-        model_info = get_model_info(self._model_name)
-        use_function_calling = model_info is not None and not model_info.has_json_mode() and model_info.supports_tool_calling()
-        structuring_llm = (
-            self.llm.with_structured_output(target_model, method="function_calling")
-            if use_function_calling
-            else self.llm.with_structured_output(target_model)
-        )
-        packaging_prompt = (
-            "Package the research below into the required schema. Do not invent, estimate, or "
-            "recompute any numeric value — use only what already appears in the tool outputs and "
-            f"final answer.\n\nFinal answer:\n{result['output']}\n\nTool outputs:\n{tool_trace}"
-        )
-        return structuring_llm.invoke(packaging_prompt)
+    def chat(
+        self,
+        message: str,
+        *,
+        context: SophieContext | None = None,
+        thread_id: str | None = None,
+    ) -> str:
+        return self.invoke(message, context=context, thread_id=thread_id)["output"]
 
-    async def stream(self, message: str) -> AsyncIterator[dict]:
-        async for event in self.executor.astream_events(
-            {"input": message, "chat_history": self.chat_history, "system_message": self._system_message()},
-            version="v2",
-            config={"callbacks": [self._usage_callback]},
+    def structured(
+        self,
+        message: str,
+        model: Type[BaseModel] | None = None,
+        *,
+        context: SophieContext | None = None,
+        thread_id: str | None = None,
+    ) -> BaseModel:
+        """Return a validated typed answer.
+
+        Previously this ran the whole tool loop and then made a *second* LLM call to repackage the
+        result into the schema. `response_format` folds that into the same graph: the schema is
+        bound as an output tool, so the model emits it directly and LangChain validates it (retrying
+        on validation failure) without a second round trip.
+        """
+        target = model or self.answer_model
+        if target is None:
+            raise ValueError(
+                f"Agent '{self.name}' has no answer_model configured; pass `model` explicitly."
+            )
+        if target not in self._structured_agents:
+            self._structured_agents[target] = create_agent(
+                model=self.llm,
+                tools=self.tools,
+                middleware=self._build_middleware(),
+                context_schema=SophieContext,
+                response_format=ToolStrategy(target),
+                debug=self._verbose,
+            )
+        ctx = context or self.default_context
+        result = self._structured_agents[target].invoke(
+            {"messages": [HumanMessage(content=message)]},
+            context=ctx,
+            config=self._invoke_config(ctx, thread_id),
+        )
+        self._record(ctx, message, result.get("messages", []))
+        return result["structured_response"]
+
+    async def stream(
+        self,
+        message: str,
+        *,
+        context: SophieContext | None = None,
+        thread_id: str | None = None,
+        seed_history: list[BaseMessage] | None = None,
+    ) -> AsyncIterator[dict]:
+        """Yield raw astream_events v2 events. v2 remains the right choice: v3 exists but its own
+        docstring marks it beta, and ag_ui_mapper.py was built against measured v2 event shapes."""
+        ctx = context or self.default_context
+        cfg = self._invoke_config(ctx, thread_id)
+        inputs = [*(seed_history or []), HumanMessage(content=message)]
+        async for event in self.agent.astream_events(
+            {"messages": inputs}, version="v2", context=ctx, config=cfg
         ):
             yield event
+        # Streamed runs used to skip run records entirely — which meant the chat widget, the only
+        # consumer of stream(), produced none at all. The final state comes from the checkpointer.
+        self._record(ctx, message, self.history(thread_id))
 
-    def reset(self) -> None:
-        self.chat_history = []
+    # ---------------------------------------------------------------- history
+
+    def history(self, thread_id: str | None = None) -> list[BaseMessage]:
+        """Full message history for a thread, ToolMessages included."""
+        state = self.agent.get_state(self._config(thread_id))
+        return list(state.values.get("messages", []))
+
+    def has_history(self, thread_id: str | None = None) -> bool:
+        return bool(self.agent.get_state(self._config(thread_id)).values.get("messages"))
+
+    def reset(self, thread_id: str | None = None) -> None:
+        """Drop a thread's conversation state. A fresh thread_id is a fresh conversation, so this
+        just clears the checkpoint for the given one."""
+        self._checkpointer.delete_thread((thread_id or DEFAULT_THREAD_ID))

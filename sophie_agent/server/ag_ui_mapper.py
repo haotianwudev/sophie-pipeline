@@ -31,6 +31,7 @@ from ag_ui.core import (
     TextMessageContentEvent,
     TextMessageEndEvent,
     TextMessageStartEvent,
+    TokenUsage,
     ToolCallArgsEvent,
     ToolCallEndEvent,
     ToolCallResultEvent,
@@ -38,16 +39,50 @@ from ag_ui.core import (
 )
 
 
+def _usage(agent: Any, context: Any) -> list[TokenUsage] | None:
+    """AG-UI's RunFinished/RunError events carry an optional `usage` list, and the agent already
+    accumulates exact per-run token counts in RunContext.usage (via UsageCallbackHandler). Reporting
+    it costs nothing and is the protocol's own field for it — previously it was tracked and then
+    dropped, so the UI had no way to show run cost."""
+    if context is None:
+        return None
+    try:
+        totals = context.run_ctx.usage.as_dict()
+    except AttributeError:
+        return None
+    if not totals.get("calls"):
+        return None
+    return [
+        TokenUsage(
+            provider=getattr(agent, "provider_name", None),
+            model=getattr(agent, "model_name", None),
+            input_tokens=totals.get("prompt_tokens"),
+            output_tokens=totals.get("completion_tokens"),
+            total_tokens=totals.get("total_tokens"),
+        )
+    ]
+
+
 async def stream_agui_events(
-    agent: Any, message: str, thread_id: str, run_id: str
+    agent: Any,
+    message: str,
+    thread_id: str,
+    run_id: str,
+    context: Any = None,
+    seed_history: list | None = None,
 ) -> AsyncIterator[BaseEvent]:
+    """`thread_id` doubles as the agent's checkpointer thread, so an AG-UI thread and the agent's
+    conversation state stay keyed the same way. `context` is the run's SophieContext; `seed_history`
+    is only non-empty when adopting a transcript for a thread with no checkpoint yet."""
     yield RunStartedEvent(type=EventType.RUN_STARTED, thread_id=thread_id, run_id=run_id)
 
     top_run_id: str | None = None
     active_text_message_ids: dict[str, str] = {}  # langchain run_id -> agui message_id
 
     try:
-        async for event in agent.stream(message):
+        async for event in agent.stream(
+            message, context=context, thread_id=thread_id, seed_history=seed_history
+        ):
             name = event.get("event")
             data = event.get("data", {}) or {}
             lc_run_id = event.get("run_id")
@@ -102,13 +137,28 @@ async def stream_agui_events(
                 )
 
             elif name == "on_chain_end" and lc_run_id == top_run_id:
-                # The top-level AgentExecutor run has finished. Anything after this (there
-                # shouldn't be anything, astream_events ends the iterator here) is ignored.
-                yield RunFinishedEvent(type=EventType.RUN_FINISHED, thread_id=thread_id, run_id=run_id)
+                # The top-level graph run has finished. Anything after this (there shouldn't be
+                # anything, astream_events ends the iterator here) is ignored.
+                yield RunFinishedEvent(
+                    type=EventType.RUN_FINISHED,
+                    thread_id=thread_id,
+                    run_id=run_id,
+                    usage=_usage(agent, context),
+                )
                 return
 
         # Stream ended without an on_chain_end for the top run — still close the run cleanly.
-        yield RunFinishedEvent(type=EventType.RUN_FINISHED, thread_id=thread_id, run_id=run_id)
+        yield RunFinishedEvent(
+            type=EventType.RUN_FINISHED,
+            thread_id=thread_id,
+            run_id=run_id,
+            usage=_usage(agent, context),
+        )
 
     except Exception as exc:  # noqa: BLE001 - deliberately broad: any failure must close the run
-        yield RunErrorEvent(type=EventType.RUN_ERROR, message=str(exc), code=type(exc).__name__)
+        yield RunErrorEvent(
+            type=EventType.RUN_ERROR,
+            message=str(exc),
+            code=type(exc).__name__,
+            usage=_usage(agent, context),
+        )
