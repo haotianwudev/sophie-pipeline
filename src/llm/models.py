@@ -32,7 +32,18 @@ class LLMModel(BaseModel):
         return (self.display_name, self.model_name, self.provider.value)
     
     def has_json_mode(self) -> bool:
-        """Check if the model supports JSON mode"""
+        """Check if the model supports JSON mode.
+
+        NOTE (langchain-core >= 1.0): utils/llm.py::call_llm routes any has_json_mode()==True
+        model through `llm.with_structured_output(pydantic_model, method="json_mode")`. In
+        langchain-core 1.5.5, `with_structured_output` silently drops the `method` kwarg and
+        always binds the schema via `bind_tools(..., tool_choice="any")` — the old raw-JSON-
+        content "json mode" path (which didn't require tool-calling support) no longer exists.
+        So in practice this flag now also requires supports_tool_calling()==True, or call_llm()
+        degrades to create_default_response() after 3 failed retries instead of raising clearly.
+        Verified against the current catalog: every has_json_mode()==True entry here also has
+        supports_tool_calling()==True. Keep it that way when adding models.
+        """
         if self.is_deepseek() or self.is_gemini():
             return False
         # Only certain Ollama models support JSON mode

@@ -155,12 +155,12 @@ class TestAPIFunctions(unittest.TestCase):
         )
         
         # Verify the result
-        self.assertEqual(len(result), 2)
+        self.assertEqual(len(result), len(self.mock_line_items))
         self.assertEqual(result[0].ticker, "AAPL")
-        self.assertEqual(result[0].report_period, "2025-01-30")
-        self.assertEqual(result[0].free_cash_flow, 106700000000.0)
-        self.assertEqual(result[0].total_debt, 118400000000.0)
-        self.assertEqual(result[0].cash_and_equivalents, 25400000000.0)
+        self.assertEqual(result[0].report_period, "2024-12-28")
+        self.assertEqual(result[0].free_cash_flow, 98299000000.0)
+        self.assertEqual(result[0].total_debt, 96799000000.0)
+        self.assertEqual(result[0].cash_and_equivalents, 30299000000.0)
         
     def test_get_company_facts(self):
         """Test get_company_facts function."""

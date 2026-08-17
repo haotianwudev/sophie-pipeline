@@ -179,13 +179,17 @@ class TestIntegration(unittest.TestCase):
         self.assertEqual(result.market_cap, 2918000000000.0)
         self.assertEqual(result.sector, "Information Technology")
         
-    @patch('src.tools.company_facts_service.get_company_facts')
+    # get_market_cap() -> company_facts_service.get_market_cap() -> self.get_company_facts(),
+    # the CompanyFactsService INSTANCE method — not the module-level get_company_facts()
+    # convenience wrapper that just calls it. Patching the module-level name is a no-op for this
+    # path, so the class method (which the singleton instance shares) is patched instead.
+    @patch('src.tools.company_facts_service.CompanyFactsService.get_company_facts')
     @patch('src.tools.company_facts_service.get_market_cap_db')
     def test_company_facts_service_market_cap(self, mock_get_market_cap_db, mock_get_company_facts):
         """Test the get_market_cap function from company_facts_service."""
         import datetime
         from src.data.models import CompanyFacts
-        
+
         # Setup mocks for today's date
         today = datetime.datetime.now().strftime("%Y-%m-%d")
         mock_facts = CompanyFacts(**self.mock_company_facts)

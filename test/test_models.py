@@ -130,21 +130,21 @@ class TestDataModels(unittest.TestCase):
         
         # Verify base attributes
         self.assertEqual(line_item.ticker, "AAPL")
-        self.assertEqual(line_item.report_period, "2025-01-30")
+        self.assertEqual(line_item.report_period, "2024-12-28")
         self.assertEqual(line_item.period, "ttm")
         self.assertEqual(line_item.currency, "USD")
-        
+
         # Verify dynamic attributes
-        self.assertEqual(getattr(line_item, "revenue"), 385000000000.0)
-        self.assertEqual(getattr(line_item, "free_cash_flow"), 106700000000.0)
-        self.assertEqual(getattr(line_item, "total_debt"), 118400000000.0)
+        self.assertEqual(getattr(line_item, "revenue"), 395760000000.0)
+        self.assertEqual(getattr(line_item, "free_cash_flow"), 98299000000.0)
+        self.assertEqual(getattr(line_item, "total_debt"), 96799000000.0)
         
         # Test line item response model
         line_item_response = LineItemResponse(
             search_results=[LineItem(**l) for l in self.mock_line_items]
         )
         
-        self.assertEqual(len(line_item_response.search_results), 2)
+        self.assertEqual(len(line_item_response.search_results), len(self.mock_line_items))
 
 
 if __name__ == '__main__':

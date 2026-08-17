@@ -540,6 +540,27 @@ class TestProviderGating:
         assert llm.temperature == 0
         assert llm.stop is None
 
+    def test_json_mode_models_all_support_tool_calling(self):
+        """langchain-core >= 1.0's with_structured_output no longer has a raw-JSON-content
+        'json_mode' path — it silently drops the `method` kwarg and always binds the schema via
+        bind_tools(tool_choice='any'). src/utils/llm.py::call_llm routes every has_json_mode()==True
+        model through with_structured_output(..., method="json_mode"), so any such model that
+        can't tool-call would degrade to create_default_response() after 3 failed retries instead
+        of failing clearly. Verified (offline, with a properly tool-calling fake model standing in
+        for a real provider) that the tool-calling path itself works correctly; this guards the
+        catalog invariant that makes it always reachable."""
+        from src.llm.models import AVAILABLE_MODELS, OLLAMA_MODELS
+
+        offenders = [
+            m.model_name
+            for m in AVAILABLE_MODELS + OLLAMA_MODELS
+            if m.has_json_mode() and not m.supports_tool_calling()
+        ]
+        assert offenders == [], (
+            f"models with has_json_mode()=True but supports_tool_calling()=False: {offenders} — "
+            "call_llm() would silently degrade to default responses for these"
+        )
+
 
 # --------------------------------------------------------------------------------------
 # Agent wiring, end to end, offline
