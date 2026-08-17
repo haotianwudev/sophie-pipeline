@@ -186,7 +186,9 @@ Browser (localhost:3000)                          Python (localhost:8000)
 ### Server — `sophie_agent/server/server.py` + `sophie_agent/serve.py`
 
 FastAPI + `ag-ui-protocol` (`ag_ui.core` types, `ag_ui.encoder.EventEncoder`). Three endpoints:
-`GET /health`, `GET /agents` (profile list for the widget's picker), `POST /agent/{profile}` →
+`GET /health`, `GET /agents` (the persona registry for delegation cards — see
+"Persona-per-delegation" below; originally speced as "profile list for the widget's picker" before
+that picker was removed), `POST /agent/{profile}` →
 `StreamingResponse` of SSE-encoded AG-UI events. Binds `127.0.0.1` only, CORS restricted to
 `localhost:3000`. `serve.py` never passes `host="0.0.0.0"`.
 
@@ -293,19 +295,22 @@ floating launcher inside itself.
 
 #### `chat-thread.tsx` — runtime wiring + message rendering
 
-Shared by both the embedded widget and the popout window (`profile`/`onProfileChange` passed in as
-props so each host owns its own profile-selection state). Per render:
+Shared by both the embedded widget and the popout window — both now render `<ChatThread />` with
+no props at all; there is no profile prop to thread through anymore (see "Persona-per-delegation"
+below for why). Per render:
 
-- `agentUrl` (`useMemo` on `[profile, selectedModel, selectedProvider]`) builds
-  `${AGENT_API_URL}/agent/${profile}` with optional `?model=&provider=` query params —
-  `AGENT_API_URL` defaults to `http://localhost:8000` via `NEXT_PUBLIC_AGENT_API_URL`.
+- `agentUrl` (`useMemo` on `[selectedModel, selectedProvider]`) builds
+  `${AGENT_API_URL}/agent/${SOPHIE_PROFILE}` (`SOPHIE_PROFILE` is the module-level constant
+  `"supervisor"`) with optional `?model=&provider=` query params — `AGENT_API_URL` defaults to
+  `http://localhost:8000` via `NEXT_PUBLIC_AGENT_API_URL`.
 - `agent = new HttpAgent({ url: agentUrl })` and `runtime = useAgUiRuntime({ agent })`, both
-  `useMemo`/hook-derived from `agentUrl` — **switching the profile chip or the model/provider
-  selector constructs a brand-new `HttpAgent` and a brand-new runtime**, which resets the visible
-  conversation. This is a second, independent way conversation state can reset besides the
-  navigation issue below — expected here (the AG-UI thread is genuinely tied to one backend
-  `AgentProfile`+model), but worth knowing when someone reports "the chat cleared" and the actual
-  cause was a model-selector click, not a page navigation.
+  `useMemo`/hook-derived from `agentUrl` — **switching the model/provider selector constructs a
+  brand-new `HttpAgent` and a brand-new runtime**, which resets the visible conversation. This is a
+  second, independent way conversation state can reset besides the navigation issue below —
+  expected here (the AG-UI thread is genuinely tied to one backend model), but worth knowing when
+  someone reports "the chat cleared" and the actual cause was a model-selector click, not a page
+  navigation. (Before the persona-per-delegation redesign, changing the profile chip did this too;
+  that axis is gone now since the profile is always `supervisor`.)
 - `ChatConfigContext` (verbose flag, selected model/provider) is a separate context from the AG-UI
   runtime, threaded down so `ToolInspector`/`ModelSelector` can read/set it without re-rendering the
   whole thread. `selectedModel`/`selectedProvider`/`verbose` are the **only** pieces of chat UI state
@@ -399,6 +404,90 @@ opt-in `--reload` CLI flag) — a `server.py`/`core/*` edit needs the process re
 `sophie-pipeline` root) before it takes effect, unlike the Next.js client side where Turbopack's Fast
 Refresh picks up `.tsx` edits automatically without a restart.
 
+### Persona-per-delegation — one agent (SOPHIE) in the composer, specialists surface as cards
+
+The chat widget originally exposed all six `AGENT_PROFILES` as manually-clickable chips (Generalist,
+Option Strategist, Quant, Wiki Researcher, Supervisor) — the user picked which specialist to talk to
+directly, and the Delegation layer (`supervisor`/`can_delegate=True`, see above) went mostly unused
+from the widget since picking "Supervisor" was just one chip among equals rather than the front
+door. Redesigned so the chat only ever talks to one agent, **SOPHIE** (`supervisor`'s
+`display_name` was renamed from "Supervisor" to `"Sophie"` in `core/profiles.py`), who plans and
+calls `delegate()`/`delegate_parallel()` herself; when she hands work to a specialist, that
+specialist appears in the thread as its own persona card rather than the user ever needing to
+choose an agent up front. This is additive to the existing delegation mechanics documented above
+(`profiles.py`, `runtime.py`, `toolkits/delegate/toolkit.py`) — no change to `delegate()` itself,
+only to how the frontend renders its calls and which profile the widget targets.
+
+**Backend — persona metadata + registry endpoint.** `AgentProfile` (`core/profiles.py`) gained a
+`persona_icon: str = "🤖"` field (a single emoji, purely cosmetic, never read by any
+agent/toolkit code) — set per specialist: `wiki_researcher` 📚, `option_strategist` 📈, `quant` 🧮,
+`market_analyst` 🌐, `generalist` 🤖 (the default), `supervisor` ✨. `server.py` gained
+`GET /agents`, returning `{agents: [{key, displayName, description, icon}, ...], supervisor:
+{key, displayName, icon}}` — `agents` excludes `can_delegate` profiles via the same filter
+`DelegationToolkit.list_agents()` already uses, so the two can never drift apart. This is the single
+source of truth the frontend persona cards read from; adding a new specialist profile later needs no
+frontend code change to get a reasonable persona (see the fallback behavior below) — only a
+`persona_icon` for a custom one.
+
+**Frontend — SOPHIE is hardcoded, chips are gone.** `chat-thread.tsx`'s `ChatThread` no longer takes
+`profile`/`onProfileChange` props (removed from both `chat-widget.tsx` and
+`app/agent-popout/page.tsx`, which now render bare `<ChatThread />`) — a module-level
+`SOPHIE_PROFILE = "supervisor"` constant is used everywhere the old `profile` prop was. The controls
+bar's profile-chip row was replaced with a static "✨ Sophie" label (from `sophiePersona` state,
+populated by the `/agents` fetch below, falling back to a hardcoded `{displayName: "Sophie", icon:
+"✨"}` while that fetch is in flight or if the server is unreachable). The model selector is
+unchanged in behavior — it still overrides SOPHIE's own model via `?model=&provider=` — but its
+`profileDefaultModel`/`profileDefaultProvider` props are now the module constants
+`SOPHIE_DEFAULT_MODEL`/`SOPHIE_DEFAULT_PROVIDER` (`"deepseek-chat"`/`"DeepSeek"`, `supervisor`'s
+configured defaults) instead of being looked up from the old `PROFILES` array, which was deleted.
+
+`ChatThread` fetches `GET {AGENT_API_URL}/agents` once on mount into a `personas: Record<string,
+AgentPersona>` map (keyed by profile key) plus `sophiePersona`, both threaded through
+`ChatConfigContext` (the same context that already carried `verbose`/`selectedModel` etc.) so the
+persona cards — rendered deep inside `MessagePrimitive.Parts`, several component layers away from
+`ChatThread` — can read them via `useContext`.
+
+**`tool-ui/delegate-persona-card.tsx` — the persona cards.** `delegate` and `delegate_parallel` are
+registered directly in `chat-thread.tsx`'s `TOOL_BY_NAME` map, *not* routed through
+`tool-ui/index.ts`'s `TOOL_UI` + `wrapToolUi()` path every other custom card uses — those two tools
+return plain text (a specialist's final answer string, or for `delegate_parallel`, several joined by
+blank lines), never the `{text, ui}` envelope `wrapToolUi()`/`parseEnvelope()` expect, so wrapping
+them in that path would just fall through to `ToolInspector` every time.
+
+- `DelegatePersonaCard` (`delegate`): reads `args.agent` (falling back to parsing `argsText` if
+  `args` hasn't arrived yet — the tool-call args stream in before the result, per
+  `ag_ui_mapper.py`'s `on_tool_start`/`on_tool_end` split) and looks it up via `personaFor()`
+  against `ChatConfigContext.personas`. Renders a collapsible card: icon + specialist display name +
+  a truncated one-line preview of the delegated `task`, a spinner while `status.type === "running"`,
+  and the specialist's answer (through a small standalone `MiniMarkdown` — a trimmed `ReactMarkdown`
+  instance, *not* `ChatMarkdown`/`MarkdownTextPrimitive`, since the latter is bound to a message's
+  own streamed text part and can't render an arbitrary string like a tool result) once the result
+  arrives.
+- `DelegateParallelPersonaCard` (`delegate_parallel`): args are `{tasks: [{agent, task, context},
+  ...]}`. The header shows every involved persona's icon in an overlapping stack plus a "N
+  specialists working together" label. The result string is `DelegationToolkit.delegate_parallel`'s
+  own join format — `f"[{agent}] {answer}"` blocks separated by `"\n\n"` — split back apart by
+  `splitParallelResult()` (regex `^\[([^\]]+)\]\s*([\s\S]*)$` per block) so each specialist's answer
+  renders under its own sub-heading rather than one undifferentiated blob.
+- `personaFor(personas, key)`: if `key` isn't in the fetched registry (a profile added server-side
+  after the frontend last fetched `/agents`, or the registry fetch failed), falls back to
+  title-casing the raw key (`"market_analyst"` → `"Market Analyst"`) with a generic 🤖 icon — this is
+  the "going forward, we may have other agents" seam: a brand-new specialist profile is usable and
+  renders sensibly from the moment it exists in `AGENT_PROFILES`, with zero frontend changes required
+  (a `persona_icon` is a nice-to-have, not a prerequisite).
+
+**Verified live**, not just read from the code: a real POST to `/agent/supervisor` asking an
+iron-condor-delta question produced both a `delegate_parallel` call (fanning out to
+`option_strategist`/`market_analyst`/`wiki_researcher` simultaneously) and two follow-up `delegate`
+calls (to `generalist` and back to `option_strategist`) in the same run — confirming SOPHIE actually
+delegates rather than just being wired to in theory. Captured the raw AG-UI SSE stream and checked
+the exact shapes the two persona cards depend on: `TOOL_CALL_ARGS` for the `delegate_parallel` call
+carried `{"tasks": [{"agent": "option_strategist", "task": "..."}, ...]}` exactly as
+`DelegateParallelPersonaCard` expects, its `TOOL_CALL_RESULT` content came back as
+`"[option_strategist] I now have all the data..."` exactly matching `splitParallelResult()`'s regex,
+and a plain `delegate` call's `TOOL_CALL_RESULT` was bare unprefixed text (no `[agent]` marker) as
+`DelegatePersonaCard` assumes.
+
 **Library choice:** `@assistant-ui/react` (1.45M npm downloads/wk) over CopilotKit (335K) — most
 popular AG-UI-native React client, and its direct-client-connection path in CopilotKit is still
 flagged `agents__unsafe_dev_only`. `@ag-ui/client` pinned to `0.0.57` (not the newer `0.0.58`) to
@@ -480,9 +569,9 @@ test/agent_evals/  cases.yaml
 
 ```
 ai-stock-suggestion-client/src/components/chat/
-  chat-widget.tsx  chat-thread.tsx  chat-markdown.tsx  dev-chat-mount.tsx
-  tool-ui/  index.ts  envelope.ts  strategy-legs-card.tsx  wiki-citation-list.tsx
-            gex-chart.tsx  dataframe-table.tsx
+  chat-widget.tsx  chat-thread.tsx  chat-markdown.tsx  dev-chat-mount.tsx  model-selector.tsx
+  tool-ui/  index.ts  envelope.ts  tool-inspector.tsx  strategy-legs-card.tsx  wiki-citation-list.tsx
+            gex-chart.tsx  dataframe-table.tsx  delegate-persona-card.tsx
 ```
 
 Reused, not reimplemented: `src/tools/api_db.py::get_db_connection`,
