@@ -52,6 +52,31 @@ class LLMModel(BaseModel):
         """Check if the model is an Ollama model"""
         return self.provider == ModelProvider.OLLAMA
 
+    def supports_tool_calling(self) -> bool:
+        """Whether this model can be used with bind_tools()/create_tool_calling_agent().
+
+        Tool-calling support is per-model, not per-provider — verified empirically (see
+        sophie-pipeline/docs/SOPHIE_AGENT.md's provider matrix) rather than assumed from the
+        provider name. In particular: DeepSeek's reasoning models (deepseek-reasoner / any local
+        R1 distill) do not expose function calling, and Ollama's tool support depends on the
+        underlying model family's chat template, not on Ollama itself.
+        """
+        if self.provider == ModelProvider.DEEPSEEK:
+            return self.model_name == "deepseek-chat"
+        if self.is_ollama():
+            name = self.model_name.lower()
+            if "deepseek-r1" in name:
+                return False
+            if "gemma" in name:
+                # Empirically verified with `sophie-agent/run.py --check-models` against the
+                # locally pulled builds: gemma3 does not return tool calls, gemma4 does (Google
+                # added function-calling support to the Gemma 4 chat template). Don't assume any
+                # other gemma generation without re-verifying.
+                return "gemma4" in name
+            return any(family in name for family in ("qwen", "llama3.1", "llama3.3", "mistral", "hermes", "firefunction"))
+        # Anthropic / OpenAI / Groq / Gemini: every model in this catalog supports tool calling.
+        return True
+
 
 # Define available models
 AVAILABLE_MODELS = [
@@ -120,6 +145,30 @@ AVAILABLE_MODELS = [
         model_name="o4-mini",
         provider=ModelProvider.OPENAI
     ),
+    # --- Appended for sophie_agent (see docs/SOPHIE_AGENT.md); strictly additive, existing
+    # entries above are untouched so ANALYST_CONFIG-driven callers see no behavior change. ---
+    LLMModel(
+        display_name="[anthropic] claude-sonnet-5",
+        model_name="claude-sonnet-5",
+        provider=ModelProvider.ANTHROPIC
+    ),
+    LLMModel(
+        display_name="[anthropic] claude-opus-5",
+        model_name="claude-opus-5",
+        provider=ModelProvider.ANTHROPIC
+    ),
+    LLMModel(
+        display_name="[anthropic] claude-haiku-4.5",
+        model_name="claude-haiku-4-5",
+        provider=ModelProvider.ANTHROPIC
+    ),
+    LLMModel(
+        # The only tool-calling-capable DeepSeek API model — deepseek-reasoner (R1) above does
+        # not support function calling.
+        display_name="[deepseek] deepseek-chat",
+        model_name="deepseek-chat",
+        provider=ModelProvider.DEEPSEEK
+    ),
 ]
 
 # Define Ollama models separately
@@ -164,6 +213,26 @@ OLLAMA_MODELS = [
         model_name="llama3.3:70b-instruct-q4_0",
         provider=ModelProvider.OLLAMA
     ),
+    # --- Appended for sophie_agent: the models actually pulled on this machine as of this
+    # writing (none of the eight above are). Verify with `sophie-agent/run.py --check-models`
+    # rather than trusting this list going forward — see docs/SOPHIE_AGENT.md. ---
+    LLMModel(
+        display_name="[alibaba] qwen3.5 (local, tool-calling)",
+        model_name="qwen3.5:latest",
+        provider=ModelProvider.OLLAMA
+    ),
+    LLMModel(
+        # Verified WORKS via `run.py --check-models` — Gemma 4's chat template (unlike Gemma 3)
+        # returns real tool calls.
+        display_name="[google] gemma4 12B (local, tool-calling)",
+        model_name="gemma4:12b",
+        provider=ModelProvider.OLLAMA
+    ),
+    LLMModel(
+        display_name="[deepseek] deepseek-r1 14B (local, no tool-calling)",
+        model_name="deepseek-r1:14b",
+        provider=ModelProvider.OLLAMA
+    ),
 ]
 
 # Create LLM_ORDER in the format expected by the UI
@@ -177,14 +246,19 @@ def get_model_info(model_name: str) -> LLMModel | None:
     all_models = AVAILABLE_MODELS + OLLAMA_MODELS
     return next((model for model in all_models if model.model_name == model_name), None)
 
-def get_model(model_name: str, model_provider: ModelProvider) -> ChatOpenAI | ChatGroq | ChatOllama | None:
+def get_model(model_name: str, model_provider: ModelProvider, **kwargs) -> ChatOpenAI | ChatGroq | ChatOllama | None:
+    """`**kwargs` lets callers override provider-specific construction params (e.g. sophie_agent
+    needs a larger Ollama num_ctx and no stop tokens for tool calling). Every existing call site
+    passes none, so behavior for them is byte-for-byte unchanged — only the Ollama branch below
+    reads from kwargs, with today's exact values as defaults.
+    """
     if model_provider == ModelProvider.GROQ:
         api_key = os.getenv("GROQ_API_KEY")
         if not api_key:
             # Print error to console
             print(f"API Key Error: Please make sure GROQ_API_KEY is set in your .env file.")
             raise ValueError("Groq API key not found.  Please make sure GROQ_API_KEY is set in your .env file.")
-        return ChatGroq(model=model_name, api_key=api_key)
+        return ChatGroq(model=model_name, api_key=api_key, **kwargs)
     elif model_provider == ModelProvider.OPENAI:
         # Get and validate API key
         api_key = os.getenv("OPENAI_API_KEY")
@@ -192,33 +266,31 @@ def get_model(model_name: str, model_provider: ModelProvider) -> ChatOpenAI | Ch
             # Print error to console
             print(f"API Key Error: Please make sure OPENAI_API_KEY is set in your .env file.")
             raise ValueError("OpenAI API key not found.  Please make sure OPENAI_API_KEY is set in your .env file.")
-        return ChatOpenAI(model=model_name, api_key=api_key)
+        return ChatOpenAI(model=model_name, api_key=api_key, **kwargs)
     elif model_provider == ModelProvider.ANTHROPIC:
         api_key = os.getenv("ANTHROPIC_API_KEY")
         if not api_key:
             print(f"API Key Error: Please make sure ANTHROPIC_API_KEY is set in your .env file.")
             raise ValueError("Anthropic API key not found.  Please make sure ANTHROPIC_API_KEY is set in your .env file.")
-        return ChatAnthropic(model=model_name, api_key=api_key)
+        return ChatAnthropic(model=model_name, api_key=api_key, **kwargs)
     elif model_provider == ModelProvider.DEEPSEEK:
         api_key = os.getenv("DEEPSEEK_API_KEY")
         if not api_key:
             print(f"API Key Error: Please make sure DEEPSEEK_API_KEY is set in your .env file.")
             raise ValueError("DeepSeek API key not found.  Please make sure DEEPSEEK_API_KEY is set in your .env file.")
-        return ChatDeepSeek(model=model_name, api_key=api_key)
+        return ChatDeepSeek(model=model_name, api_key=api_key, **kwargs)
     elif model_provider == ModelProvider.GEMINI:
         api_key = os.getenv("GOOGLE_API_KEY")
         if not api_key:
             print(f"API Key Error: Please make sure GOOGLE_API_KEY is set in your .env file.")
             raise ValueError("Google API key not found.  Please make sure GOOGLE_API_KEY is set in your .env file.")
-        return ChatGoogleGenerativeAI(model=model_name, api_key=api_key)
+        return ChatGoogleGenerativeAI(model=model_name, api_key=api_key, **kwargs)
     elif model_provider == ModelProvider.OLLAMA:
         # For Ollama, we use a base URL instead of an API key
         # Check if OLLAMA_HOST is set (for Docker on macOS)
         ollama_host = os.getenv("OLLAMA_HOST", "localhost")
         base_url = os.getenv("OLLAMA_BASE_URL", f"http://{ollama_host}:11434")
-        return ChatOllama(
-            model=model_name, 
-            base_url=base_url,
+        ollama_kwargs = dict(
             temperature=0.1,  # Lower temperature for more deterministic output
             top_p=0.1,  # Lower top_p for more focused sampling
             top_k=10,  # Lower top_k for more focused sampling
@@ -226,3 +298,5 @@ def get_model(model_name: str, model_provider: ModelProvider) -> ChatOpenAI | Ch
             repeat_penalty=1.1,  # Slight penalty for repetition
             stop=["</s>", "Human:", "Assistant:"]  # Stop tokens
         )
+        ollama_kwargs.update(kwargs)
+        return ChatOllama(model=model_name, base_url=base_url, **ollama_kwargs)

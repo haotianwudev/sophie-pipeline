@@ -1,0 +1,57 @@
+# Golden eval cases for sophie-agent/eval.py. Each case asserts on tool TRAJECTORY
+# (intermediate_steps), not just final text — see docs/SOPHIE_AGENT.md's rigor section.
+#
+# `expects_tools` is a subset that must all appear (order not required unless `ordered: true`).
+# This is a starter set (10 cases) covering every toolkit at least once, not the full ~30-case
+# target described in the design doc — extending it is a mechanical follow-up, not a design change.
+
+- id: wiki_gex_lookup
+  profile: wiki_researcher
+  question: "What does our wiki say about gamma exposure (GEX)? Cite the page path."
+  expects_tools: [wiki_search, wiki_get_page]
+  ordered: true
+
+- id: wiki_categories
+  profile: wiki_researcher
+  question: "What wiki categories exist?"
+  expects_tools: [wiki_list_categories]
+
+- id: strategy_list_presets
+  profile: option_strategist
+  question: "List every option strategy preset and tell me which one is backtest-derived."
+  expects_tools: [list_strategy_presets]
+
+- id: strategy_build_iron_condor
+  profile: option_strategist
+  question: "Build a 45-DTE iron condor on today's live SPX chain and give me net credit, max loss, and breakevens."
+  expects_tools: [build_strategy]
+
+- id: strategy_compare_deltas
+  profile: option_strategist
+  question: "Compare iron condor short-put deltas of 0.10, 0.16, and 0.20 on the 45-DTE chain — which has the best credit-to-width?"
+  expects_tools: [compare_strategy_variants]
+
+- id: options_chain_metadata
+  profile: generalist
+  question: "What is SPX spot right now and what expirations are available?"
+  expects_tools: [spx_chain_metadata]
+
+- id: options_gex
+  profile: generalist
+  question: "What's the current net gamma exposure (GEX) for SPX?"
+  expects_tools: [spx_gex]
+
+- id: market_table_inventory
+  profile: quant
+  question: "What tables are available for market data queries?"
+  expects_tools: [sql_list_tables]
+
+- id: market_backtest_evidence
+  profile: option_strategist
+  question: "What backtest evidence exists for the iron condor strategy?"
+  expects_tools: [strategy_backtest_evidence]
+
+- id: dataframe_after_chain
+  profile: generalist
+  question: "Pull the current SPX option chain, then tell me how many contracts have volume greater than 0."
+  expects_tools: [spx_option_chain, df_python]

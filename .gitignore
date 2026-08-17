@@ -58,3 +58,6 @@ Thumbs.db
 
 # Node.js
 node_modules/
+
+# sophie_agent run records (generated, per-turn diagnostic dumps — see docs/SOPHIE_AGENT.md)
+runs/
