@@ -14,8 +14,8 @@ from dataclasses import dataclass, field
 import pytest
 import test_utils  # noqa: F401
 
-from src.sophie_agent.ag_ui_mapper import stream_agui_events
-from src.sophie_agent.toolkits.ui_envelope import ui_envelope
+from sophie_agent.server.ag_ui_mapper import stream_agui_events
+from sophie_agent.toolkits.ui_envelope import ui_envelope
 
 TOP_RUN_ID = "top-run"
 

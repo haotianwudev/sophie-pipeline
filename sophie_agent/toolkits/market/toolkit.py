@@ -11,7 +11,7 @@ from langchain_core.tools import BaseTool, tool
 
 from src.tools.api_db import get_db_connection
 
-from .base import SophieToolkit
+from ..base import SophieToolkit
 
 # name -> (one-line description, has biz_date column for as_of injection)
 CURATED_TABLES: dict[str, tuple[str, bool]] = {

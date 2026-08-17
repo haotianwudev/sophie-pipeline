@@ -11,7 +11,7 @@ from dataclasses import dataclass, field
 from typing import Callable, Literal, Union
 
 from .chain_types import ChainContract, ExpirationChain
-from ..schemas import OptionLeg
+from ..core.schemas import OptionLeg
 
 DeltaTarget = Union[float, Literal["atm"]]
 

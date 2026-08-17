@@ -14,21 +14,27 @@ import pytest
 import test_utils  # noqa: F401  (adds project root to sys.path — see test/test_utils.py)
 
 from src.llm.models import ModelProvider, get_model, get_model_info
-from src.sophie_agent.agent import SophieAgent, ToolCallingNotSupportedError
-from src.sophie_agent.config import DEFAULT_CONFIG, AgentConfig
-from src.sophie_agent.options.chain_types import ChainContract, ExpirationChain
-from src.sophie_agent.options.historical import HistoricalChainUnavailable, load_historical_chain
-from src.sophie_agent.options.payoff import find_breakevens, legs_pnl, net_premium
-from src.sophie_agent.options.presets import PRESETS_BY_ID, build_preset_legs
-from src.sophie_agent.profiles import AGENT_PROFILES
-from src.sophie_agent.runcontext import RunContext
-from src.sophie_agent.runtime import AgentRuntime
-from src.sophie_agent.schemas import Citation, OptionLeg, StrategyRecommendation
-from src.sophie_agent.store import DataFrameStore
-from src.sophie_agent.toolkits.dataframe import DataFrameToolkit
-from src.sophie_agent.toolkits.market import _guard_and_prepare_sql
-from src.sophie_agent.toolkits.options import OptionChainToolkit
-from src.sophie_agent.wiki_store import WikiStore
+from sophie_agent import (
+    DEFAULT_CONFIG,
+    AGENT_PROFILES,
+    AgentConfig,
+    AgentRuntime,
+    Citation,
+    DataFrameStore,
+    OptionLeg,
+    RunContext,
+    SophieAgent,
+    StrategyRecommendation,
+    ToolCallingNotSupportedError,
+    WikiStore,
+)
+from sophie_agent.options.chain_types import ChainContract, ExpirationChain
+from sophie_agent.options.historical import HistoricalChainUnavailable, load_historical_chain
+from sophie_agent.options.payoff import find_breakevens, legs_pnl, net_premium
+from sophie_agent.options.presets import PRESETS_BY_ID, build_preset_legs
+from sophie_agent.toolkits.dataframe import DataFrameToolkit
+from sophie_agent.toolkits.market import _guard_and_prepare_sql
+from sophie_agent.toolkits.options import OptionChainToolkit
 
 SAMPLE_CHAIN_PATH = (
     Path(__file__).resolve().parents[2]

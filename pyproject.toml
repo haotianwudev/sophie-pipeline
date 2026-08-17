@@ -5,7 +5,8 @@ description = "ETL for SOPHIE"
 authors = ["Your Name <your.email@example.com>"]
 readme = "README.md"
 packages = [
-    { include = "src", from = "." }
+    { include = "src", from = "." },
+    { include = "sophie_agent", from = "." }
 ]
 [tool.poetry.dependencies]
 python = "3.12"

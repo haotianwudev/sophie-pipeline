@@ -17,7 +17,7 @@ import numpy as np
 import pandas as pd
 from langchain_core.tools import BaseTool, tool
 
-from .base import SophieToolkit
+from ..base import SophieToolkit
 
 _MAX_REPR_CHARS = 4000
 

@@ -8,17 +8,18 @@ Ollama/Groq/Gemini.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.outputs import LLMResult
 
-from .runcontext import RunContext
+if TYPE_CHECKING:
+    from ..context.runcontext import RunContext
 
 
 class UsageCallbackHandler(BaseCallbackHandler):
-    def __init__(self, run_ctx: RunContext) -> None:
+    def __init__(self, run_ctx: "RunContext") -> None:
         self._run_ctx = run_ctx
 
     def on_llm_end(self, response: LLMResult, *, run_id: UUID, **kwargs: Any) -> None:

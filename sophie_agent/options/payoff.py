@@ -6,7 +6,7 @@ the leg shape (same fields: type, side, strike, premium, quantity).
 
 from __future__ import annotations
 
-from ..schemas import OptionLeg
+from ..core.schemas import OptionLeg
 
 
 def leg_pnl(price: float, leg: OptionLeg) -> float:

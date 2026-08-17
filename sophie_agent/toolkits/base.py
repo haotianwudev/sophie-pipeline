@@ -11,9 +11,9 @@ from typing import ClassVar
 from langchain_core.tools import BaseTool, BaseToolkit
 from pydantic import ConfigDict, SkipValidation
 
-from ..config import AgentConfig
-from ..runcontext import RunContext
-from ..store import DataFrameStore
+from ..context.runcontext import RunContext
+from ..context.store import DataFrameStore
+from ..core.config import AgentConfig
 
 
 class SophieToolkit(BaseToolkit):

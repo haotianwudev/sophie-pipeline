@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from .agent import SophieAgent
+from ..core.agent import SophieAgent
 
 
 def run_repl(agent: SophieAgent) -> None:

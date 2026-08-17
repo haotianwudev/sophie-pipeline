@@ -11,14 +11,11 @@ from typing import ClassVar
 import pandas as pd
 from langchain_core.tools import BaseTool, tool
 
-# src/__init__.py inserts the project root onto sys.path on first import of the `src` package,
-# which always happens before this submodule (src.sophie_agent.toolkits.options) is importable —
-# see docs/SOPHIE_AGENT.md's import-convention note.
 from src.tools import api_cboe
 
-from ..options.historical import HistoricalChainUnavailable, load_historical_chain
-from .base import SophieToolkit
-from .ui_envelope import ui_envelope
+from ...options.historical import HistoricalChainUnavailable, load_historical_chain
+from ..base import SophieToolkit
+from ..ui_envelope import ui_envelope
 
 
 class OptionChainToolkit(SophieToolkit):

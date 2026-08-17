@@ -2,8 +2,8 @@
 
 A LangChain tool-calling agent over the Sophie platform: 240 wiki pages, a 19-table market-data
 Postgres, the public GraphQL API, live SPX option chains, and 14 years of historical OptionsDX
-chains. Lives at `src/sophie_agent/`, entrypoint `sophie-agent/run.py` (CLI) and
-`sophie-agent/serve.py` (local-only AG-UI HTTP API, Phase 2 — see below). The Sophie client repo's
+chains. Lives at `sophie_agent/`, entrypoints `sophie_agent/run.py` (CLI) and
+`sophie_agent/serve.py` / `sophie-agent/serve.py` (local-only AG-UI HTTP API, Phase 2 — see below). The Sophie client repo's
 chat widget (`src/components/chat/`) talks to the latter directly.
 
 ## Why
@@ -314,15 +314,21 @@ additional quant toolkits from Phase 1's extension seam.
 ## Files
 
 ```
-src/sophie_agent/
-  __init__.py  config.py  runcontext.py  agent.py  profiles.py  runtime.py
-  store.py  schemas.py  wiki_store.py  cache.py  callbacks.py  cli.py
-  server.py  ag_ui_mapper.py  run_record.py
-  options/     presets.py  payoff.py  liquidity.py  historical.py  chain_types.py
+sophie_agent/
+  __init__.py  run.py  serve.py  eval.py
+  core/        __init__.py  agent.py  runtime.py  profiles.py  config.py  schemas.py  callbacks.py
+  context/     __init__.py  runcontext.py  store.py  wiki_store.py  cache.py  run_record.py
+  server/      __init__.py  server.py  ag_ui_mapper.py
+  cli/         __init__.py  cli.py
+  options/     __init__.py  presets.py  payoff.py  liquidity.py  historical.py  chain_types.py
                blackscholes.py  analytics.py
-  toolkits/    base.py  wiki.py  options.py  strategy.py  dataframe.py
-               market.py  delegate.py  ui_envelope.py
-sophie-agent/  run.py  eval.py  serve.py
+  toolkits/    __init__.py  base.py  ui_envelope.py
+               wiki/       __init__.py  toolkit.py
+               options/    __init__.py  toolkit.py
+               strategy/   __init__.py  toolkit.py
+               dataframe/  __init__.py  toolkit.py
+               market/     __init__.py  toolkit.py
+               delegate/   __init__.py  toolkit.py
 test/          test_sophie_agent.py  test_ag_ui.py
 test/agent_evals/  cases.yaml
 ```

@@ -1,6 +1,6 @@
 """StrategyToolkit — the headline toolkit: resolve, price, and back-test-justify option strategies.
 
-Ports client/src/lib/options/{presets,payoff,analytics,liquidity}.ts (see src/sophie_agent/options/)
+Ports client/src/lib/options/{presets,payoff,analytics,liquidity}.ts (see sophie_agent/options/)
 so a resolved position is already a valid Options Viewer OptionLeg payload, and keeps all 20 preset
 ids identical to the client.
 """
@@ -18,7 +18,7 @@ from langchain_core.tools import BaseTool, tool
 from src.tools import api_cboe
 from src.tools.api_db import get_db_connection
 
-from ..options.analytics import (
+from ...options.analytics import (
     SPX_DEFAULT_DIV_YIELD,
     SPX_DEFAULT_RATE,
     SPX_MULTIPLIER,
@@ -27,14 +27,14 @@ from ..options.analytics import (
     probability_of_profit,
     solve_implied_vol,
 )
-from ..options.chain_types import ChainContract, ExpirationChain
-from ..options.historical import HistoricalChainUnavailable, load_historical_chain
-from ..options.liquidity import compute_liquidity
-from ..options.payoff import find_breakevens, legs_pnl, net_premium
-from ..options.presets import PRESETS_BY_ID, STRATEGY_PRESETS, LegTarget, build_preset_legs
-from ..schemas import OptionLeg
-from .base import SophieToolkit
-from .ui_envelope import ui_envelope
+from ...options.chain_types import ChainContract, ExpirationChain
+from ...options.historical import HistoricalChainUnavailable, load_historical_chain
+from ...options.liquidity import compute_liquidity
+from ...options.payoff import find_breakevens, legs_pnl, net_premium
+from ...options.presets import PRESETS_BY_ID, STRATEGY_PRESETS, LegTarget, build_preset_legs
+from ...core.schemas import OptionLeg
+from ..base import SophieToolkit
+from ..ui_envelope import ui_envelope
 
 
 def _price_grid(spot: float, n: int = 400) -> list[float]:

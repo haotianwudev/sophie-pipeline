@@ -7,10 +7,10 @@ from typing import ClassVar
 
 from langchain_core.tools import BaseTool, tool
 
-from ..config import AgentConfig
-from ..wiki_store import WikiStore
-from .base import SophieToolkit
-from .ui_envelope import ui_envelope
+from ...context.wiki_store import WikiStore
+from ...core.config import AgentConfig
+from ..base import SophieToolkit
+from ..ui_envelope import ui_envelope
 
 
 @lru_cache(maxsize=4)

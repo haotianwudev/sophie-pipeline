@@ -13,11 +13,11 @@ from typing import TYPE_CHECKING, ClassVar
 
 from langchain_core.tools import BaseTool, tool
 
-from ..profiles import AGENT_PROFILES
-from .base import SophieToolkit
+from ...core.profiles import AGENT_PROFILES
+from ..base import SophieToolkit
 
 if TYPE_CHECKING:
-    from ..runtime import AgentRuntime
+    from ...core.runtime import AgentRuntime
 
 
 class DelegationToolkit(SophieToolkit):

@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from typing import Callable, Literal
 
 from .blackscholes import black_scholes, inverse_standard_normal_cdf, standard_normal_cdf
-from ..schemas import OptionLeg
+from ..core.schemas import OptionLeg
 
 SPX_MULTIPLIER = 100
 SPX_DEFAULT_RATE = 0.054
