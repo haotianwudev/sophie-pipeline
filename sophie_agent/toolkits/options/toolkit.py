@@ -17,6 +17,7 @@ from src.tools import api_cboe
 
 from ...options.historical import HistoricalChainUnavailable, load_historical_chain
 from ..base import SophieToolkit
+from ..strategy.toolkit import build_strategy, list_strategy_presets
 from ..ui_envelope import ui_envelope
 
 _LIVE_DISABLED = "Live chain tools are disabled in point-in-time mode (as_of is set)."
@@ -139,7 +140,13 @@ class OptionChainToolkit(SophieToolkit):
     toolkit_name: ClassVar[str] = "options"
 
     def get_tools(self) -> list[BaseTool]:
-        return [spx_chain_metadata, spx_option_chain, spx_gex, spx_historical_chain]
+        # build_strategy/list_strategy_presets are defined in ..strategy.toolkit (the resolve/price
+        # logic lives there — see that module's docstring) but exposed here too so a profile only
+        # needs "options" in its toolkits tuple to both read chains and build a position from one.
+        return [
+            spx_chain_metadata, spx_option_chain, spx_gex, spx_historical_chain,
+            list_strategy_presets, build_strategy,
+        ]
 
     def system_prompt_fragment(self) -> str:
         return (
@@ -147,7 +154,12 @@ class OptionChainToolkit(SophieToolkit):
             "spx_option_chain, spx_gex) is Cboe's 15-min-delayed feed — carries IV and full greeks, "
             "but disabled entirely in point-in-time (as_of) mode since live quotes are never "
             "point-in-time. HISTORICAL (spx_historical_chain) is OptionsDX EOD data 2010-2023 — "
-            "carries delta but NO implied vol and NO open interest; anything requiring IV/greeks on "
-            "historical data must first solve IV (the strategy toolkit does this). Never confuse the "
-            "two sources in one analysis without saying so."
+            "carries delta but NO implied vol and NO open interest; build_strategy solves IV itself "
+            "when needed. Never confuse the two sources in one analysis without saying so.\n\n"
+            "Resolving a position: list_strategy_presets() for the 20 preset ids, then "
+            "build_strategy() to price one against a real chain — it does all the payoff/Greeks "
+            "arithmetic itself, never compute those numbers yourself. ONLY 'iron_condor' is "
+            "backtest-derived (0.10-delta wings / 0.16-delta shorts, from sophie-option-research's "
+            "real iron_condor_45dte.yaml); every other preset's deltas are conventional retail "
+            "defaults — always state which applies."
         )

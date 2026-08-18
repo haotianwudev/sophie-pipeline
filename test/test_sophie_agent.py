@@ -440,7 +440,9 @@ class TestStructure:
         assert "Unknown agent" in result
 
     def test_delegate_refuses_when_no_runtime_on_context(self):
-        result = _run_one(_context(runtime=None), "quant", "anything", None)
+        # option_strategist, not quant — quant is delegatable=False right now (roster trimmed to
+        # the active trade-suggestion flow), which would trip that guard before this one.
+        result = _run_one(_context(runtime=None), "option_strategist", "anything", None)
         assert "Delegation is unavailable" in result
 
     def test_delegate_respects_depth_limit(self):
@@ -452,7 +454,7 @@ class TestStructure:
             config=DEFAULT_CONFIG,
             runtime=runtime,
         )
-        result = _run_one(ctx, "quant", "anything", None)
+        result = _run_one(ctx, "option_strategist", "anything", None)
         assert "depth limit" in result
 
 

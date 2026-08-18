@@ -22,6 +22,7 @@ from pydantic import ValidationError
 
 from sophie_agent import AGENT_PROFILES, AgentRuntime
 from sophie_agent.toolkits.delegate.toolkit import ParallelTask
+from sophie_agent.toolkits.strategy.toolkit import compare_strategy_variants
 
 
 @pytest.fixture(scope="module")
@@ -32,6 +33,9 @@ def tools_by_name():
         for toolkit in runtime.build_toolkits(profile):
             for t in toolkit.get_tools():
                 tools[t.name] = t
+    # compare_strategy_variants is temporarily withheld from every profile's StrategyToolkit
+    # (see get_tools()) but its own schema contract is still worth asserting on directly.
+    tools[compare_strategy_variants.name] = compare_strategy_variants
     return tools
 
 

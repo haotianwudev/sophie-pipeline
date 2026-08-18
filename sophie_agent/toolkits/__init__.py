@@ -7,10 +7,11 @@ from .delegate import DelegationToolkit
 from .market import MarketDataToolkit
 from .options import OptionChainToolkit
 from .strategy import StrategyToolkit
-from .wiki import WikiToolkit
+from .wiki import OptionWikiToolkit, WikiToolkit
 
 TOOLKIT_REGISTRY: dict[str, type[SophieToolkit]] = {
     "wiki": WikiToolkit,
+    "wiki_options": OptionWikiToolkit,
     "options": OptionChainToolkit,
     "strategy": StrategyToolkit,
     "dataframe": DataFrameToolkit,
@@ -21,6 +22,7 @@ TOOLKIT_REGISTRY: dict[str, type[SophieToolkit]] = {
 __all__ = [
     "SophieToolkit",
     "WikiToolkit",
+    "OptionWikiToolkit",
     "OptionChainToolkit",
     "StrategyToolkit",
     "DataFrameToolkit",

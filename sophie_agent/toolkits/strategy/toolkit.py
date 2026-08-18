@@ -351,11 +351,13 @@ class StrategyToolkit(SophieToolkit):
     toolkit_name: ClassVar[str] = "strategy"
 
     def get_tools(self) -> list[BaseTool]:
+        # compare_strategy_variants and strategy_backtest_evidence are defined below but withheld
+        # for now (not needed yet) — add them back to this list to re-enable; also restore their
+        # mentions in system_prompt_fragment() and option_strategist's own prompt (core/profiles.py)
+        # at the same time, or the model will narrate calling a tool it can't actually invoke.
         return [
             list_strategy_presets,
             build_strategy,
-            compare_strategy_variants,
-            strategy_backtest_evidence,
         ]
 
     def system_prompt_fragment(self) -> str:
@@ -366,7 +368,5 @@ class StrategyToolkit(SophieToolkit):
             "sophie-option-research's real iron_condor_45dte.yaml); every other preset's deltas are "
             "conventional retail defaults. Always state which applies — never present a "
             "conventional default as if it were backtested. The LLM never computes payoff numbers "
-            "itself; build_strategy and compare_strategy_variants do all arithmetic. Use "
-            "strategy_backtest_evidence to cite real Sharpe/drawdown/win-rate numbers when they "
-            "exist for a strategy."
+            "itself; build_strategy does all arithmetic."
         )

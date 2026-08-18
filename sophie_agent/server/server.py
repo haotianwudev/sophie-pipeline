@@ -80,8 +80,9 @@ def health() -> dict:
 def get_agents() -> dict:
     """Persona registry for the chat widget's delegation UI (see docs/SOPHIE_AGENT.md's
     "Persona-per-delegation" section). Excludes can_delegate profiles (supervisors, i.e. SOPHIE
-    herself) — those are never a delegate() target, mirroring DelegationToolkit.list_agents()'s
-    own filter, so the two stay consistent by construction rather than by convention."""
+    herself) and non-delegatable profiles (CLI/direct-use only, e.g. generalist) — neither is ever
+    a real delegate() target, mirroring DelegationToolkit.list_agents()'s own filter, so the two
+    stay consistent by construction rather than by convention."""
     return {
         "agents": [
             {
@@ -91,7 +92,7 @@ def get_agents() -> dict:
                 "icon": p.persona_icon,
             }
             for key, p in AGENT_PROFILES.items()
-            if not p.can_delegate
+            if not p.can_delegate and p.delegatable
         ],
         "supervisor": {
             "key": "supervisor",

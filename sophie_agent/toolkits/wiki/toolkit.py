@@ -100,3 +100,65 @@ class WikiToolkit(SophieToolkit):
             "full text. This is Sophie's own published material — cite the page `path` for any "
             "claim you attribute to it."
         )
+
+
+# --- option_strategist's scoped wiki access -------------------------------------------------
+# A *separate* toolkit rather than a flag on WikiToolkit: wiki_search/wiki_get_page above are
+# free functions shared with the full-access "wiki" toolkit (supervisor), so scoping them via a
+# constructor arg would mean threading per-instance config through module-level @tool functions
+# that only ever see `runtime.context`, not `self`. Two small dedicated functions that hardcode
+# the category is simpler and can't leak into the shared ones by accident.
+_OPTION_WIKI_CATEGORY = "option-strategy"
+
+
+@tool
+def option_wiki_search(
+    runtime: ToolRuntime,
+    query: Annotated[str, Field(description="Search keywords to find relevant option-strategy wiki pages (e.g. 'iron condor deltas', 'theta decay').")],
+    label: Annotated[str | None, Field(description="Optional topic label filter (e.g. 'delta', 'DTE').")] = None,
+    limit: Annotated[int, Field(ge=1, le=50, description="Maximum number of search results to return (1 to 50).")] = 8,
+) -> str:
+    """Search Sophie's option-strategy wiki pages only (category='option-strategy') — the
+    strategy/Greeks/mechanics reference material, not market/macro/13F content. Use this first for
+    any "what does our content say about X strategy" question."""
+    wiki = _store_for(runtime)
+    results = wiki.search(query, category=_OPTION_WIKI_CATEGORY, label=label, limit=limit, as_of=runtime.context.run_ctx.as_of)
+    if not results:
+        return "No option-strategy wiki pages matched that query."
+    lines = [
+        f"- {r['path']} — {r['title']} (score={r['score']})"
+        + (f"\n  {r['summary']}" if r["summary"] else "")
+        for r in results
+    ]
+    return ui_envelope("\n".join(lines), "wiki_citations", results=results)
+
+
+@tool
+def option_wiki_get_page(
+    runtime: ToolRuntime,
+    path: Annotated[str, Field(description="Exact wiki path returned by option_wiki_search (e.g. 'option-strategy/gex').")],
+) -> str:
+    """Fetch the full markdown content of an option-strategy wiki page by its exact path, as
+    returned by option_wiki_search. Refuses paths outside the option-strategy category."""
+    page = _store_for(runtime).get_page(path)
+    if page is None:
+        return f"No wiki page found at path '{path}'. Use option_wiki_search to find the right path."
+    if page.category != _OPTION_WIKI_CATEGORY:
+        return f"'{path}' is outside the option-strategy wiki (category='{page.category}') — not available here."
+    text = f"# {page.title}\n\n{page.content}"
+    return ui_envelope(text, "wiki_page", path=page.path, title=page.title, category=page.category)
+
+
+class OptionWikiToolkit(SophieToolkit):
+    toolkit_name: ClassVar[str] = "wiki_options"
+
+    def get_tools(self) -> list[BaseTool]:
+        return [option_wiki_search, option_wiki_get_page]
+
+    def system_prompt_fragment(self) -> str:
+        return (
+            "OPTION WIKI TOOLKIT: Sophie's option-strategy wiki pages only — strategy mechanics, "
+            "Greeks, and related reference material. option_wiki_search first, then "
+            "option_wiki_get_page for full text. Cite the page `path` for any claim you attribute "
+            "to it. Market/macro/13F wiki content is out of scope here."
+        )

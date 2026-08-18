@@ -41,6 +41,8 @@ def _run_one(ctx: SophieContext, agent_key: str, task: str, extra_context: str |
         return f"Unknown agent '{agent_key}'. Call list_agents() for valid keys."
     if profile.can_delegate:
         return f"'{agent_key}' is itself a supervisor and cannot be delegated to."
+    if not profile.delegatable:
+        return f"'{agent_key}' is not available for delegation. Call list_agents() for valid keys."
     if ctx.runtime is None:
         return "Delegation is unavailable: no AgentRuntime is attached to this run's context."
 
@@ -64,11 +66,11 @@ def _run_one(ctx: SophieContext, agent_key: str, task: str, extra_context: str |
 @tool
 def list_agents() -> str:
     """List every available specialist agent profile: key, description, and toolkits. Supervisors
-    (can_delegate profiles) are excluded — they cannot be delegated to."""
+    (can_delegate profiles) and non-delegatable profiles (CLI/direct-use only) are excluded."""
     return "\n".join(
         f"- {key}: {p.description} (toolkits: {', '.join(p.toolkits)})"
         for key, p in AGENT_PROFILES.items()
-        if not p.can_delegate
+        if not p.can_delegate and p.delegatable
     )
 
 

@@ -28,6 +28,7 @@ from ag_ui.core import (
     RunErrorEvent,
     RunFinishedEvent,
     RunStartedEvent,
+    StateSnapshotEvent,
     TextMessageContentEvent,
     TextMessageEndEvent,
     TextMessageStartEvent,
@@ -126,6 +127,7 @@ async def stream_agui_events(
 
             elif name == "on_tool_end":
                 tool_call_id = lc_run_id
+                tool_name = event.get("name", "unknown_tool")
                 output = data.get("output")
                 content = output if isinstance(output, str) else str(output)
                 yield ToolCallResultEvent(
@@ -135,6 +137,30 @@ async def stream_agui_events(
                     content=content,
                     role="tool",
                 )
+
+                # Mirror build_strategy's result into AG-UI shared state so the frontend's SPX
+                # Payoff Builder (a completely separate React subtree from the chat) can offer to
+                # load it, via PayoffBridgeProvider — see client/src/hooks/use-payoff-bridge.tsx.
+                # ui_envelope() always returns valid JSON (json.dumps, not a bare dict repr), so a
+                # parse failure here just means "not an envelope-shaped tool," not a real error.
+                if tool_name == "build_strategy":
+                    try:
+                        ui = json.loads(content).get("ui")
+                    except (json.JSONDecodeError, AttributeError):
+                        ui = None
+                    if isinstance(ui, dict) and ui.get("component") == "strategy_legs":
+                        yield StateSnapshotEvent(
+                            type=EventType.STATE_SNAPSHOT,
+                            snapshot={
+                                "payoffBuilder": {
+                                    "legs": ui.get("legs", []),
+                                    "presetId": ui.get("preset_id"),
+                                    "expiration": ui.get("expiration"),
+                                    "dte": ui.get("dte"),
+                                    "backtested": ui.get("backtested"),
+                                }
+                            },
+                        )
 
             elif name == "on_chain_end" and lc_run_id == top_run_id:
                 # The top-level graph run has finished. Anything after this (there shouldn't be
