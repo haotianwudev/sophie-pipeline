@@ -52,6 +52,8 @@ Thumbs.db
 
 # Txt files
 *.txt
+# Cloud Run deploy needs this in the repo (GitHub Actions checks out from git, not disk)
+!services/spx-options-api/requirements.txt
 
 # PDF files
 *.pdf
