@@ -14,6 +14,11 @@ from datetime import datetime
 from src.cfg.line_items_list import LINE_ITEMS
 from src.tools.api_alphavantage import get_news_sentiment_multi
 
+# Yahoo Finance ticker mapping for symbols whose DB ticker doesn't match their
+# Yahoo Finance symbol (e.g. SPX is stored/queried as "SPX" but Yahoo's symbol
+# for the S&P 500 index is "^GSPC", not "^SPX").
+YFINANCE_TICKER_MAP = {"VIX": "^VIX", "VVIX": "^VVIX", "SPX": "^GSPC"}
+
 def save_to_db(data, upload_func, table_name=None, verbose=False):
     """Generic function to save data to database with standardized logging"""
     try:
@@ -196,27 +201,29 @@ def upload_prices(tickers, start_date, end_date, verbose=False, data_source='aut
             if data_source.lower() == 'auto':
                 print(f"Using waterfall logic for data source selection")
                 
-                # Check if ticker is "VIX" or "SPY"
-                if ticker in ["VIX", "SPY", "VVIX"]:
+                # Index/ETF symbols Yahoo Finance serves best (see YFINANCE_TICKER_MAP).
+                # VIX3M is deliberately absent: Yahoo no longer serves ^VIX3M history,
+                # so the vol-regime agent sources it from FRED (VXVCLS) instead.
+                if ticker in ["VIX", "SPY", "VVIX", "SPX"]:
                     selected_source = 'yfinance'
                     print(f"STRATEGY: Ticker is {ticker}, using Yahoo Finance as primary source")
                     if verbose:
                         print(f"Using Yahoo Finance for {ticker}...", end=" ", flush=True)
                     else:
                         print(f"Using Yahoo Finance for {ticker}...")
-                    
+
                     try:
-                        # For VIX, use ^VIX ticker symbol with Yahoo Finance
-                        yf_ticker = f"^{ticker}" if ticker in ["VIX", "VVIX"] else ticker
+                        # Map to the correct Yahoo Finance symbol (e.g. SPX -> ^GSPC)
+                        yf_ticker = YFINANCE_TICKER_MAP.get(ticker, ticker)
                         print(f"API CALL: Yahoo Finance - Fetching {yf_ticker} from {start_date} to {end_date}")
-                        result = upload_prices_yfinance(yf_ticker, start_date, end_date)
-                        
+                        result = upload_prices_yfinance(yf_ticker, start_date, end_date, db_ticker=ticker)
+
                         # Special handling: Save to database with the original ticker
-                        if result['success'] and ticker == "VIX":
-                            print(f"{Fore.GREEN}Success - Using ^VIX data saved as VIX{Style.RESET_ALL}")
-                        
+                        if result['success'] and ticker in YFINANCE_TICKER_MAP:
+                            print(f"{Fore.GREEN}Success - Using {yf_ticker} data saved as {ticker}{Style.RESET_ALL}")
+
                         if result['success']:
-                            if verbose and ticker != "VIX":  # Already printed success for VIX above
+                            if verbose and ticker not in YFINANCE_TICKER_MAP:  # Already printed success above
                                 print(f"{Fore.GREEN}Success{Style.RESET_ALL}")
                             success.append(ticker)
                             print(f"SUCCESS: Yahoo Finance data for {ticker} saved to database")
@@ -274,10 +281,10 @@ def upload_prices(tickers, start_date, end_date, verbose=False, data_source='aut
             
             # If we're here, either 'auto' logic didn't succeed yet, or a specific source was requested
             if selected_source.lower() == 'yfinance':
-                # For VIX, use ^VIX ticker symbol with Yahoo Finance
-                yf_ticker = f"^{ticker}" if ticker == "VIX" and selected_source.lower() == 'yfinance' else ticker
+                # Map to the correct Yahoo Finance symbol (e.g. SPX -> ^GSPC)
+                yf_ticker = YFINANCE_TICKER_MAP.get(ticker, ticker)
                 print(f"API CALL: Yahoo Finance - Fetching {yf_ticker} from {start_date} to {end_date}")
-                upload_func = lambda t, s, e: upload_prices_yfinance(yf_ticker, s, e)
+                upload_func = lambda t, s, e: upload_prices_yfinance(yf_ticker, s, e, db_ticker=ticker)
             elif selected_source.lower() == 'polygon':
                 print(f"API CALL: Polygon - Fetching {ticker} from {start_date} to {end_date}")
                 upload_func = upload_prices_polygon
@@ -413,16 +420,19 @@ def upload_prices_polygon(ticker, start_date, end_date):
         traceback.print_exc()
         return {'success': False, 'no_data': False}
 
-def upload_prices_yfinance(ticker, start_date, end_date):
+def upload_prices_yfinance(ticker, start_date, end_date, db_ticker=None):
     """
     Fetch price data using Yahoo Finance API and save it to the PostgreSQL database.
     Takes ticker, start_date, and end_date as parameters, fetches the data,
     and saves it to the database.
-    
-    Special handling for VIX ticker:
-    - If ticker starts with '^', it's a Yahoo Finance special ticker
-    - The data will be saved to the database with the original ticker name (without '^')
-    
+
+    Args:
+        ticker: Yahoo Finance symbol to fetch (e.g. "^VIX", "^GSPC")
+        db_ticker: Ticker to store the data under in the database. Defaults to
+            `ticker` with a leading '^' stripped, for callers where the Yahoo
+            symbol and DB ticker only differ by that prefix (e.g. VIX). Symbols
+            like SPX (Yahoo "^GSPC") must pass this explicitly.
+
     Returns:
         dict: Status object with 'success' (bool) and 'no_data' (bool) fields
     """
@@ -430,11 +440,10 @@ def upload_prices_yfinance(ticker, start_date, end_date):
         from src.tools.api_yfinance import get_price_yahoofinance
         from src.data.models import Price
         import pandas as pd
-        
-        # Extract original ticker (for database storage) if it's a special YF ticker
-        original_ticker = ticker
-        if ticker.startswith('^'):
-            original_ticker = ticker[1:]  # Remove the '^' for database storage
+
+        # Resolve the ticker to store the data under in the database
+        original_ticker = db_ticker or (ticker[1:] if ticker.startswith('^') else ticker)
+        if original_ticker != ticker:
             print(f"Will save Yahoo Finance data for {ticker} as {original_ticker} in database")
         
         # Get price data from Yahoo Finance

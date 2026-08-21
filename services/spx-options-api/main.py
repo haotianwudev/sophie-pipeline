@@ -173,6 +173,17 @@ def get_options_analytics(ticker: str = Query("^SPX", description="Ticker symbol
     data = fetch_cboe_ticker_data(ticker)
     spot = data["spot_price"]
     quote_date_str = data["cboe_timestamp"][:10] if len(data["cboe_timestamp"]) >= 10 else date.today().strftime("%Y-%m-%d")
+
+    try:
+        vix_data = fetch_cboe_ticker_data("_VIX")
+        vix_obj = {
+            "value": vix_data["spot_price"],
+            "previousClose": vix_data["previous_close"],
+            "percentChange": vix_data["price_change_percent"],
+            "timestamp": vix_data["cboe_timestamp"]
+        }
+    except Exception:
+        vix_obj = None
     try:
         quote_date = datetime.strptime(quote_date_str, "%Y-%m-%d").date()
     except ValueError:
@@ -236,12 +247,7 @@ def get_options_analytics(ticker: str = Query("^SPX", description="Ticker symbol
             "percentChange": data["price_change_percent"],
             "timestamp": data["cboe_timestamp"]
         },
-        "vix": {
-            "value": 15.0,
-            "previousClose": 15.0,
-            "percentChange": 0.0,
-            "timestamp": data["cboe_timestamp"]
-        },
+        "vix": vix_obj,
         "expirationDates": expiration_dates_list
     }
 
