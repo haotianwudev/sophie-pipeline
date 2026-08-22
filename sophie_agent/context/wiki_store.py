@@ -1,14 +1,19 @@
-"""Loads and indexes the 240 Sophie wiki markdown pages.
+"""Loads and indexes Sophie's wiki markdown pages (~250 at time of writing).
 
 Frontmatter parser mirrors client/src/lib/wiki.ts (scalars + single-line bracketed arrays only —
 that's all the wiki files actually use). The registry TS file at src/data/wiki/index.ts is
-regex-parsed only to recover `summary`, the one field present there but not in frontmatter;
-if that parse fails for any reason we degrade to frontmatter-only rather than hard-failing the
-whole toolkit on a TS formatting change.
+regex-parsed to recover the fields that live there but not in frontmatter: `summary` and
+`topics`. If that parse fails for any reason we degrade to frontmatter-only rather than
+hard-failing the whole toolkit on a TS formatting change.
 
-Retrieval is BM25-lite pure Python: tokenize, IDF-weight, score over title x3, labels x2,
-summary x2, '##' headings x1.5, body x1. At 240 documents this needs no index build step, no
-embedding key, no vector-store dependency.
+`topics` are the sub-topic labels the site groups and filters a category by (e.g. "Volatility &
+VRP" within option-strategy). They are weighted above `labels` in scoring: a label comes from
+the shared ArticleLabel enum and is uniform across a category — every option-strategy page is
+"Options Trading" — so it barely discriminates, whereas a topic separates pages inside one.
+
+Retrieval is BM25-lite pure Python: tokenize, IDF-weight, score over title x3, topics x2.5,
+labels x2, summary x2, '##' headings x1.5, body x1. At this corpus size it needs no index build
+step, no embedding key, no vector-store dependency.
 
 Retrieval has two granularities: whole-page, and section (a '##' or '###' block). The section
 layer exists because the methodology pages have grown past 350 lines with 30 headings — pulling
@@ -137,6 +142,10 @@ class WikiPage:
     summary: str | None
     content: str
     file_path: Path
+    # Sub-topic labels from the TS registry (not frontmatter). Unlike `labels` -- the shared
+    # ArticleLabel enum, which is uniform across a category and so says nothing about which page
+    # inside it you want -- these are the dimension the site actually filters a category by.
+    topics: list[str] = field(default_factory=list)
 
     @cached_property
     def headings(self) -> list[str]:
@@ -212,23 +221,37 @@ def _parse_frontmatter(raw: str) -> tuple[dict, str]:
     return fm, content
 
 
-def _parse_registry_summaries(registry_path: Path) -> dict[str, str]:
-    """Best-effort regex extraction of {path, summary} pairs from the TS registry array."""
+def _parse_registry_meta(registry_path: Path) -> dict[str, dict]:
+    """Best-effort regex extraction of per-entry metadata from the TS registry array.
+
+    Recovers the two fields that live only in the registry and not in the markdown frontmatter:
+    `summary`, and `topics` (the sub-topic labels the site groups and filters a category by).
+    Entries are kept even when one field is missing, since `topics` is only assigned for some
+    categories.
+    """
     try:
         text = registry_path.read_text(encoding="utf-8")
     except OSError:
         return {}
-    summaries: dict[str, str] = {}
+    meta: dict[str, dict] = {}
     try:
         # Split on the object-open boundary used by every entry in the array.
         for chunk in text.split("\n  {")[1:]:
             path_m = re.search(r'path:\s*"([^"]+)"', chunk)
+            if not path_m:
+                continue
             summary_m = re.search(r'summary:\s*\n?\s*"((?:[^"\\]|\\.)*)"', chunk)
-            if path_m and summary_m:
-                summaries[path_m.group(1)] = summary_m.group(1).replace('\\"', '"')
+            topics_m = re.search(r"topics:\s*\[([^\]]*)\]", chunk)
+            topics: list[str] = []
+            if topics_m:
+                topics = [t.strip().strip("\"'") for t in topics_m.group(1).split(",") if t.strip()]
+            meta[path_m.group(1)] = {
+                "summary": summary_m.group(1).replace('\\"', '"') if summary_m else None,
+                "topics": topics,
+            }
     except Exception:
         return {}
-    return summaries
+    return meta
 
 
 class WikiStore:
@@ -243,7 +266,7 @@ class WikiStore:
         self._load()
 
     def _load(self) -> None:
-        summaries = _parse_registry_summaries(self._registry_path)
+        registry = _parse_registry_meta(self._registry_path)
         if not self._wiki_dir.exists():
             return
         for md_file in self._wiki_dir.rglob("*.md"):
@@ -259,9 +282,10 @@ class WikiStore:
                 page_date=fm.get("date"),
                 labels=fm.get("labels", []) if isinstance(fm.get("labels"), list) else [],
                 related=fm.get("related", []) if isinstance(fm.get("related"), list) else [],
-                summary=summaries.get(path),
+                summary=(registry.get(path) or {}).get("summary"),
                 content=content,
                 file_path=md_file,
+                topics=(registry.get(path) or {}).get("topics") or [],
             )
             self._pages[path] = page
 
@@ -274,6 +298,12 @@ class WikiStore:
             weighted = Counter()
             for term in _tokenize(page.title):
                 weighted[term] += 3
+            # Topics outrank labels: a label is uniform across a category (every option-strategy
+            # page is "Options Trading"), so it adds almost no discriminating signal, while a
+            # topic separates pages within one.
+            for topic in page.topics:
+                for term in _tokenize(topic):
+                    weighted[term] += 2.5
             for label in page.labels:
                 for term in _tokenize(label):
                     weighted[term] += 2
@@ -299,6 +329,7 @@ class WikiStore:
         query: str,
         category: str | None = None,
         label: str | None = None,
+        topic: str | None = None,
         limit: int = 8,
         as_of: date | None = None,
     ) -> list[dict]:
@@ -315,6 +346,8 @@ class WikiStore:
             if category and self._normalize_category(page.category) != self._normalize_category(category):
                 continue
             if label and label.lower() not in {l.lower() for l in page.labels}:
+                continue
+            if topic and topic.lower() not in {tp.lower() for tp in page.topics}:
                 continue
             if as_of and page.page_date and page.page_date > as_of.isoformat():
                 continue
@@ -336,6 +369,7 @@ class WikiStore:
                 "category": p.category,
                 "summary": p.summary,
                 "labels": p.labels,
+                "topics": p.topics,
                 "score": round(s, 3),
             }
             for s, p in scores[:limit]
@@ -363,6 +397,9 @@ class WikiStore:
                 # Page title/labels carry context so a section stays findable by its topic.
                 for term in _tokenize(page.title):
                     weighted[term] += 2
+                for topic in page.topics:
+                    for term in _tokenize(topic):
+                        weighted[term] += 1.5
                 for label in page.labels:
                     for term in _tokenize(label):
                         weighted[term] += 1
@@ -379,6 +416,7 @@ class WikiStore:
         query: str,
         category: str | None = None,
         label: str | None = None,
+        topic: str | None = None,
         limit: int = 8,
         as_of: date | None = None,
     ) -> list[dict]:
@@ -396,6 +434,8 @@ class WikiStore:
             if category and self._normalize_category(page.category) != self._normalize_category(category):
                 continue
             if label and label.lower() not in {l.lower() for l in page.labels}:
+                continue
+            if topic and topic.lower() not in {tp.lower() for tp in page.topics}:
                 continue
             if as_of and page.page_date and page.page_date > as_of.isoformat():
                 continue
@@ -434,6 +474,17 @@ class WikiStore:
     def get_outline(self, path: str) -> list[dict] | None:
         page = self._pages.get(path)
         return None if page is None else page.outline()
+
+    def list_topics(self, category: str | None = None) -> list[tuple[str, int]]:
+        """Sub-topics in use, with page counts, most-used first. Filterable by category since
+        each category has its own vocabulary — topics are not shared across them."""
+        counts: Counter[str] = Counter()
+        for page in self._pages.values():
+            if category and self._normalize_category(page.category) != self._normalize_category(category):
+                continue
+            for topic in page.topics:
+                counts[topic] += 1
+        return sorted(counts.items(), key=lambda kv: (-kv[1], kv[0]))
 
     def list_categories(self) -> list[str]:
         cats = {self._normalize_category(p.category) for p in self._pages.values()}

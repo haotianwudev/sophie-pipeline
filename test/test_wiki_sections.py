@@ -1,8 +1,12 @@
-"""Section-level wiki addressing (category > page > section).
+"""Section-level wiki addressing (category > page > section) and sub-topic labels.
 
 Covers the splitter's edge cases rather than the happy path only: fenced code blocks that
 contain '##' lines, pages whose text starts before any heading, and level-2 headings whose
 body lives entirely in their level-3 children.
+
+The second half covers `topics`, which are regex-recovered from the TS registry rather than
+frontmatter. That parse is the fragile part -- the field is injected directly after `path:`,
+ahead of `summary:` -- so it is pinned here against a realistic registry fixture.
 """
 
 from __future__ import annotations
@@ -146,3 +150,128 @@ def test_section_search_is_cheaper_than_the_whole_page(store):
     page = store.get_page("option-strategy/demo")
     section = store.get_section("option-strategy/demo", "Limitations")
     assert len(section.split()) < len(page.content.split())
+
+
+# ---------------------------------------------------------------------------------------
+# Sub-topics (parsed from the TS registry, not frontmatter)
+# ---------------------------------------------------------------------------------------
+
+REGISTRY_TS = """import { ArticleLabel } from "@/data/articles/types";
+
+export const wikiEntries: WikiEntry[] = [
+  {
+    path: "option-strategy/demo",
+    topics: ["Volatility & VRP", "Income & Writing"],
+    title: "Demo Page",
+    articleSlug: "",
+    date: "2026-08-22",
+    labels: [ArticleLabel.OPTIONS],
+    summary:
+      "A demo page used by the tests.",
+  },
+  {
+    path: "option-strategy/other",
+    topics: ["Income & Writing"],
+    title: "Other Page",
+    articleSlug: "",
+    date: "2026-08-22",
+    labels: [ArticleLabel.OPTIONS],
+    summary: "Another demo page.",
+  },
+  {
+    path: "option-strategy/untagged",
+    title: "Untagged Page",
+    articleSlug: "",
+    date: "2026-08-22",
+    labels: [ArticleLabel.OPTIONS],
+    summary: "Has no topics.",
+  },
+];
+"""
+
+OTHER_PAGE = """\
+---
+path: option-strategy/other
+title: Other Page
+---
+
+## Writing Premium
+
+Selling covered calls for income.
+"""
+
+UNTAGGED_PAGE = """\
+---
+path: option-strategy/untagged
+title: Untagged Page
+---
+
+## Something
+
+Body text.
+"""
+
+
+@pytest.fixture()
+def topic_store(tmp_path):
+    wiki_dir = tmp_path / "wiki" / "option-strategy"
+    wiki_dir.mkdir(parents=True)
+    (wiki_dir / "demo.md").write_text(PAGE, encoding="utf-8")
+    (wiki_dir / "other.md").write_text(OTHER_PAGE, encoding="utf-8")
+    (wiki_dir / "untagged.md").write_text(UNTAGGED_PAGE, encoding="utf-8")
+    registry = tmp_path / "index.ts"
+    registry.write_text(REGISTRY_TS, encoding="utf-8")
+    return WikiStore(tmp_path / "wiki", registry)
+
+
+def test_topics_are_parsed_from_the_registry(topic_store):
+    page = topic_store.get_page("option-strategy/demo")
+    assert page.topics == ["Volatility & VRP", "Income & Writing"]
+
+
+def test_topics_default_to_empty_when_absent(topic_store):
+    assert topic_store.get_page("option-strategy/untagged").topics == []
+
+
+def test_topics_do_not_break_summary_parsing(topic_store):
+    # The topics field is injected directly after `path:`, ahead of `summary:` -- a regression
+    # here would silently strip every summary from the 44 entries that carry topics.
+    assert topic_store.get_page("option-strategy/demo").summary == "A demo page used by the tests."
+    assert topic_store.get_page("option-strategy/untagged").summary == "Has no topics."
+
+
+def test_list_topics_counts_and_orders_by_use(topic_store):
+    assert topic_store.list_topics() == [("Income & Writing", 2), ("Volatility & VRP", 1)]
+
+
+def test_list_topics_can_scope_to_a_category(topic_store):
+    assert topic_store.list_topics("option-strategy")
+    assert topic_store.list_topics("macro") == []
+
+
+def test_topic_filter_narrows_page_search(topic_store):
+    hits = topic_store.search("page", topic="Volatility & VRP", limit=50)
+    assert [h["path"] for h in hits] == ["option-strategy/demo"]
+
+
+def test_multi_topic_page_is_reachable_from_each_of_its_topics(topic_store):
+    for t in ("Volatility & VRP", "Income & Writing"):
+        paths = [h["path"] for h in topic_store.search("page", topic=t, limit=50)]
+        assert "option-strategy/demo" in paths
+
+
+def test_unknown_topic_matches_nothing(topic_store):
+    assert topic_store.search("page", topic="Nope", limit=50) == []
+
+
+def test_topic_filter_applies_to_section_search(topic_store):
+    hits = topic_store.search_sections("premium income", topic="Income & Writing", limit=50)
+    assert hits
+    assert {h["path"] for h in hits} <= {"option-strategy/demo", "option-strategy/other"}
+    assert all("option-strategy/untagged" != h["path"] for h in hits)
+
+
+def test_page_search_results_expose_topics(topic_store):
+    hits = topic_store.search("demo", limit=5)
+    assert hits
+    assert "topics" in hits[0]

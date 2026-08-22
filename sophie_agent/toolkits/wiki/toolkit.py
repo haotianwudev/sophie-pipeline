@@ -1,4 +1,4 @@
-"""WikiToolkit — search and read Sophie's 240 wiki markdown pages."""
+"""WikiToolkit — search and read Sophie's wiki markdown pages (~250 at time of writing)."""
 
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ from ..ui_envelope import ui_envelope
 
 @lru_cache(maxsize=4)
 def _get_wiki_store(wiki_dir: str, registry_path: str) -> WikiStore:
-    """Cached by path pair so the 240-file corpus is parsed once per process rather than per
+    """Cached by path pair so the corpus is parsed once per process rather than per
     lookup. Toolkits are stateless now, so this is resolved on each tool call from the config on
     the live context — the cache is what keeps that cheap."""
     return WikiStore(Path(wiki_dir), Path(registry_path))
@@ -33,15 +33,17 @@ def wiki_search(
     runtime: ToolRuntime,
     query: Annotated[str, Field(description="Search keywords to find relevant wiki pages (e.g. 'gamma exposure', 'iron condor').")],
     category: Annotated[str | None, Field(description="Optional category filter from wiki_list_categories (e.g. 'option-strategy', 'form13f').")] = None,
-    label: Annotated[str | None, Field(description="Optional topic label filter (e.g. 'GEX', 'delta', 'macro').")] = None,
+    label: Annotated[str | None, Field(description="Optional broad domain filter (e.g. 'Options Trading', 'Quantitative Finance'). Coarse — usually a whole category shares one.")] = None,
+    topic: Annotated[str | None, Field(description="Optional sub-topic filter within a category, from wiki_list_topics (e.g. 'Volatility & VRP', 'Spreads & Structures'). Narrower and more useful than `label`.")] = None,
     limit: Annotated[int, Field(ge=1, le=50, description="Maximum number of search results to return (1 to 50).")] = 8,
 ) -> str:
-    """Search Sophie's wiki (240 published articles' machine-readable knowledge-base pages) by
-    keyword. Ranks by title/labels/summary/headings/body relevance. Use this first for any "what
-    does our content say about X" question. `category` narrows to one of the wiki_list_categories()
-    values; `label` filters by a topic label."""
+    """Search Sophie's wiki — the machine-readable knowledge-base pages behind the published
+    articles — by keyword. Ranks by title/topics/labels/summary/headings/body relevance. Use this
+    first for any "what does our content say about X" question. `category` narrows to one of the
+    wiki_list_categories() values; `topic` narrows to a sub-topic within a category (see
+    wiki_list_topics); `label` is a coarse domain tag and rarely discriminates on its own."""
     wiki = _store_for(runtime)
-    results = wiki.search(query, category=category, label=label, limit=limit, as_of=runtime.context.run_ctx.as_of)
+    results = wiki.search(query, category=category, label=label, topic=topic, limit=limit, as_of=runtime.context.run_ctx.as_of)
     if not results:
         return "No wiki pages matched that query."
     lines = [
@@ -82,7 +84,8 @@ def wiki_search_sections(
     runtime: ToolRuntime,
     query: Annotated[str, Field(description="Search keywords to find the specific section that answers the question (e.g. 'how is realized vol calculated', 'gamma flip').")],
     category: Annotated[str | None, Field(description="Optional category filter from wiki_list_categories (e.g. 'option-strategy').")] = None,
-    label: Annotated[str | None, Field(description="Optional topic label filter (e.g. 'GEX', 'macro').")] = None,
+    label: Annotated[str | None, Field(description="Optional broad domain filter (e.g. 'Options Trading'). Coarse — usually a whole category shares one.")] = None,
+    topic: Annotated[str | None, Field(description="Optional sub-topic filter within a category, from wiki_list_topics (e.g. 'Volatility & VRP').")] = None,
     limit: Annotated[int, Field(ge=1, le=50, description="Maximum number of section results to return (1 to 50).")] = 8,
 ) -> str:
     """Search the wiki at SECTION level and return the specific '##'/'###' blocks that match,
@@ -92,7 +95,7 @@ def wiki_search_sections(
     wiki_get_section to read it."""
     wiki = _store_for(runtime)
     results = wiki.search_sections(
-        query, category=category, label=label, limit=limit, as_of=runtime.context.run_ctx.as_of
+        query, category=category, label=label, topic=topic, limit=limit, as_of=runtime.context.run_ctx.as_of
     )
     return _format_section_hits(results, "No wiki sections matched that query.")
 
@@ -146,6 +149,22 @@ def wiki_get_section(
 
 
 @tool
+def wiki_list_topics(
+    runtime: ToolRuntime,
+    category: Annotated[str | None, Field(description="Optional category to scope to (e.g. 'option-strategy'). Topics are per-category, so scoping is usually what you want.")] = None,
+) -> str:
+    """List the sub-topics in use, with page counts. These are the values accepted by the `topic`
+    filter on wiki_search / wiki_search_sections, and are the dimension the site itself groups a
+    category by — narrower than `label`, which a whole category tends to share. A page can carry
+    more than one topic, so counts overlap."""
+    topics = _store_for(runtime).list_topics(category)
+    if not topics:
+        scope = f" for category '{category}'" if category else ""
+        return f"No sub-topics assigned{scope} yet."
+    return "\n".join(f"- {name} ({count})" for name, count in topics)
+
+
+@tool
 def wiki_list_categories(runtime: ToolRuntime) -> str:
     """List every wiki category (form13f and form-13f are the same category, normalized)."""
     return ", ".join(_store_for(runtime).list_categories())
@@ -175,6 +194,7 @@ class WikiToolkit(SophieToolkit):
             wiki_get_section,
             wiki_get_page,
             wiki_list_categories,
+            wiki_list_topics,
             wiki_for_article,
         ]
 
@@ -189,7 +209,12 @@ class WikiToolkit(SophieToolkit):
             "methodology pages run past 5,000 words, so this typically costs ~85% less context "
             "than the whole page. For a broad question, wiki_search to find the page, then "
             "wiki_outline to see its sections before deciding what to read. Reserve wiki_get_page "
-            "for when you genuinely need the entire document. "
+            "for when you genuinely need the entire document.\n"
+            "To narrow a large category, filter by `topic` (wiki_list_topics shows the values and "
+            "counts) — these are the sub-topics the site itself groups by, e.g. 'Volatility & VRP' "
+            "inside option-strategy. Prefer `topic` over `label`: a label is a broad domain tag "
+            "that a whole category tends to share, so it rarely narrows anything. A page can "
+            "carry several topics. "
             "This is Sophie's own published material — cite the page `path` for any claim you "
             "attribute to it."
         )
@@ -208,14 +233,15 @@ _OPTION_WIKI_CATEGORY = "option-strategy"
 def option_wiki_search(
     runtime: ToolRuntime,
     query: Annotated[str, Field(description="Search keywords to find relevant option-strategy wiki pages (e.g. 'iron condor deltas', 'theta decay').")],
-    label: Annotated[str | None, Field(description="Optional topic label filter (e.g. 'delta', 'DTE').")] = None,
+    label: Annotated[str | None, Field(description="Optional broad domain filter. Coarse — most option-strategy pages share one.")] = None,
+    topic: Annotated[str | None, Field(description="Optional sub-topic filter, from option_wiki_list_topics (e.g. 'Volatility & VRP', 'Income & Writing').")] = None,
     limit: Annotated[int, Field(ge=1, le=50, description="Maximum number of search results to return (1 to 50).")] = 8,
 ) -> str:
     """Search Sophie's option-strategy wiki pages only (category='option-strategy') — the
     strategy/Greeks/mechanics reference material, not market/macro/13F content. Use this first for
     any "what does our content say about X strategy" question."""
     wiki = _store_for(runtime)
-    results = wiki.search(query, category=_OPTION_WIKI_CATEGORY, label=label, limit=limit, as_of=runtime.context.run_ctx.as_of)
+    results = wiki.search(query, category=_OPTION_WIKI_CATEGORY, label=label, topic=topic, limit=limit, as_of=runtime.context.run_ctx.as_of)
     if not results:
         return "No option-strategy wiki pages matched that query."
     lines = [
@@ -246,7 +272,8 @@ def option_wiki_get_page(
 def option_wiki_search_sections(
     runtime: ToolRuntime,
     query: Annotated[str, Field(description="Search keywords to find the specific section that answers the question (e.g. 'how is realized vol calculated', 'gamma flip').")],
-    label: Annotated[str | None, Field(description="Optional topic label filter (e.g. 'delta', 'DTE').")] = None,
+    label: Annotated[str | None, Field(description="Optional broad domain filter. Coarse — most option-strategy pages share one.")] = None,
+    topic: Annotated[str | None, Field(description="Optional sub-topic filter, from option_wiki_list_topics (e.g. 'Spreads & Structures').")] = None,
     limit: Annotated[int, Field(ge=1, le=50, description="Maximum number of section results to return (1 to 50).")] = 8,
 ) -> str:
     """Search the option-strategy wiki at SECTION level, returning the specific '##'/'###' blocks
@@ -258,6 +285,7 @@ def option_wiki_search_sections(
         query,
         category=_OPTION_WIKI_CATEGORY,
         label=label,
+        topic=topic,
         limit=limit,
         as_of=runtime.context.run_ctx.as_of,
     )
@@ -318,6 +346,17 @@ def option_wiki_get_section(
     )
 
 
+@tool
+def option_wiki_list_topics(runtime: ToolRuntime) -> str:
+    """List the option-strategy wiki's sub-topics with page counts. These are the values accepted
+    by the `topic` filter on option_wiki_search / option_wiki_search_sections. A page can carry
+    more than one topic, so counts overlap."""
+    topics = _store_for(runtime).list_topics(_OPTION_WIKI_CATEGORY)
+    if not topics:
+        return "No sub-topics assigned in the option-strategy wiki yet."
+    return "\n".join(f"- {name} ({count})" for name, count in topics)
+
+
 class OptionWikiToolkit(SophieToolkit):
     toolkit_name: ClassVar[str] = "wiki_options"
 
@@ -328,6 +367,7 @@ class OptionWikiToolkit(SophieToolkit):
             option_wiki_outline,
             option_wiki_get_section,
             option_wiki_get_page,
+            option_wiki_list_topics,
         ]
 
     def system_prompt_fragment(self) -> str:
@@ -339,6 +379,12 @@ class OptionWikiToolkit(SophieToolkit):
             "option_wiki_get_section to read just that block — much cheaper than the whole page. "
             "For a broad question: option_wiki_search, then option_wiki_outline to see the "
             "sections before choosing. Reserve option_wiki_get_page for when you need the entire "
-            "document. Cite the page `path` for any claim you attribute to it. Market/macro/13F "
+            "document.\n"
+            "The 44 pages here are grouped into sub-topics — Volatility & VRP, Income & Writing, "
+            "Spreads & Structures, Platform Methodology, Greeks & Mechanics, Practice & Tax — "
+            "usable as the `topic` filter and listed with counts by option_wiki_list_topics. "
+            "Prefer it over `label`, which nearly every page here shares. A page can carry "
+            "several topics. "
+            "Cite the page `path` for any claim you attribute to it. Market/macro/13F "
             "wiki content is out of scope here."
         )
