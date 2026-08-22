@@ -1,0 +1,71 @@
+{
+  "final_phase": "Recovery",
+  "phase_confidence": 55.0,
+  "phase_direction": "clockwise",
+  "reasoning": "\u2022 Growth Z-score (+0.256) remains expansionary while Inflation Z-score (-0.365) narrows toward zero.\n\u2022 Clock hand at 305.0\u00b0 decisively crosses into the Overheat boundary following steady clockwise momentum.\n\u2022 PPI Final Demand at 4.99% YoY confirms persistent wholesale pressure transmitting into consumer prices.\n\u2022 Real GDPNow at 4.0% and tight jobless claims (206k) support resilient domestic cyclical demand.",
+  "outlook": "\u2022 70% probability of transitioning into Overheat as pipeline wholesale inflation lifts consumer CPI.\n\u2022 20% probability of remaining in Recovery if AI productivity gains absorb cost pressures.\n\u2022 Watch PPI-CPI spread and long-end Treasury yields for accelerated phase shift timing.",
+  "key_indicators": [
+    "Growth Z (+0.256) and Inflation Z (-0.365) position clock hand at 305.0 degrees",
+    "Atlanta Fed GDPNow estimates 4.0% Q3 annualized real GDP growth",
+    "PPI Final Demand elevated at 4.99% YoY signaling sticky pipeline inflation",
+    "Initial Jobless Claims tight at 206k with Unemployment Rate at 4.1%",
+    "10-Year Treasury yield rose to 4.74% under a bear-steepening regime"
+  ],
+  "risks": [
+    "Wholesale inflation pass-through accelerating consumer CPI into Overheat",
+    "Hawkish FOMC dissent increasing risk of restrictive rate hikes",
+    "Yield curve steepening raising corporate and real estate refinancing costs"
+  ],
+  "best_asset": "Equities",
+  "recommended_sectors": [
+    "Technology (IYW)",
+    "Telecom (IYZ)",
+    "Materials (IYM)"
+  ],
+  "gemini_research_summary": "The US economy advanced clockwise to 305.0\u00b0, officially crossing into Overheat territory as 4.99% PPI wholesale pressure transmits into consumer prices amid 4.0% GDPNow growth.",
+  "phase_probabilities": [
+    {
+      "phase": "Overheat",
+      "probability": 70
+    },
+    {
+      "phase": "Recovery",
+      "probability": 20
+    },
+    {
+      "phase": "Stagflation",
+      "probability": 10
+    }
+  ],
+  "monitoring_triggers": [
+    {
+      "indicator": "PPI-CPI Spread",
+      "threshold": "Closing via rising Core CPI",
+      "meaning": "Signals full wholesale inflation transmission"
+    },
+    {
+      "indicator": "10-Year Treasury Yield",
+      "threshold": "> 4.85%",
+      "meaning": "Pressures corporate multiples and tightens credit conditions"
+    },
+    {
+      "indicator": "5-Year Breakeven Inflation",
+      "threshold": "> 2.50%",
+      "meaning": "Confirms unanchoring of medium-term inflation expectations"
+    }
+  ],
+  "sector_rationale": [
+    {
+      "etf": "IYW",
+      "rationale": "High free cash flow conversion and AI infrastructure capex insulate enterprise tech earnings."
+    },
+    {
+      "etf": "IYZ",
+      "rationale": "Reliable cash flow yields and digital utility pricing provide resilient defensive growth."
+    },
+    {
+      "etf": "IYM",
+      "rationale": "Directly benefits from rising industrial demand, tight supply, and commodity pricing power."
+    }
+  ]
+}
