@@ -67,6 +67,84 @@ def wiki_get_page(
     return ui_envelope(text, "wiki_page", path=page.path, title=page.title, category=page.category)
 
 
+def _format_section_hits(results: list[dict], empty_msg: str) -> str:
+    if not results:
+        return empty_msg
+    lines = [
+        f"- {r['breadcrumb']} (score={r['score']}, {r['words']}w)\n  {r['snippet']}"
+        for r in results
+    ]
+    return ui_envelope("\n".join(lines), "wiki_citations", results=results)
+
+
+@tool
+def wiki_search_sections(
+    runtime: ToolRuntime,
+    query: Annotated[str, Field(description="Search keywords to find the specific section that answers the question (e.g. 'how is realized vol calculated', 'gamma flip').")],
+    category: Annotated[str | None, Field(description="Optional category filter from wiki_list_categories (e.g. 'option-strategy').")] = None,
+    label: Annotated[str | None, Field(description="Optional topic label filter (e.g. 'GEX', 'macro').")] = None,
+    limit: Annotated[int, Field(ge=1, le=50, description="Maximum number of section results to return (1 to 50).")] = 8,
+) -> str:
+    """Search the wiki at SECTION level and return the specific '##'/'###' blocks that match,
+    each with its page path, heading and a snippet. Prefer this over wiki_search when the question
+    is narrow ("how is X calculated?"), because the pages are long — reading one section instead of
+    a whole page typically costs ~85% less context. Pass a returned `path` + `heading` to
+    wiki_get_section to read it."""
+    wiki = _store_for(runtime)
+    results = wiki.search_sections(
+        query, category=category, label=label, limit=limit, as_of=runtime.context.run_ctx.as_of
+    )
+    return _format_section_hits(results, "No wiki sections matched that query.")
+
+
+@tool
+def wiki_outline(
+    runtime: ToolRuntime,
+    path: Annotated[str, Field(description="Exact wiki path returned by wiki_search (e.g. 'option-strategy/vol-regime-methodology').")],
+) -> str:
+    """List a wiki page's section headings with their nesting level and word counts, without
+    fetching the page body. Use this to decide which section you actually need before spending
+    context on wiki_get_page — the largest pages run past 5,000 words across 30 sections."""
+    outline = _store_for(runtime).get_outline(path)
+    if outline is None:
+        return f"No wiki page found at path '{path}'. Use wiki_search to find the right path."
+    if not outline:
+        return f"'{path}' has no section headings."
+    lines = [
+        f"{'  ' if row['level'] == 3 else ''}- {row['heading']} ({row['words']}w)"
+        for row in outline
+    ]
+    total = sum(row["words"] for row in outline)
+    return f"{path} — {len(outline)} sections, {total} words total:\n" + "\n".join(lines)
+
+
+@tool
+def wiki_get_section(
+    runtime: ToolRuntime,
+    path: Annotated[str, Field(description="Exact wiki path (e.g. 'option-strategy/vol-regime-methodology').")],
+    heading: Annotated[str, Field(description="Exact section heading text as shown by wiki_outline or wiki_search_sections (e.g. 'Core Signals'). Case-insensitive.")],
+    include_subsections: Annotated[bool, Field(description="For a top-level ('##') heading, also include its nested '###' subsections. Default true.")] = True,
+) -> str:
+    """Fetch ONE section of a wiki page by its heading text, instead of the whole page. Math blocks
+    ($$...$$) and tables are preserved intact. Sections are addressed by heading text, not by URL
+    anchor. Cite the page `path` (and the heading) for any claim taken from it."""
+    page = _store_for(runtime).get_page(path)
+    if page is None:
+        return f"No wiki page found at path '{path}'. Use wiki_search to find the right path."
+    text = page.find_section(heading, include_subsections=include_subsections)
+    if text is None:
+        available = ", ".join(f"'{s.heading}'" for s in page.sections) or "(none)"
+        return f"No section titled '{heading}' on '{path}'. Available sections: {available}"
+    return ui_envelope(
+        f"# {page.title}\n\n{text}",
+        "wiki_page",
+        path=page.path,
+        title=page.title,
+        category=page.category,
+        heading=heading,
+    )
+
+
 @tool
 def wiki_list_categories(runtime: ToolRuntime) -> str:
     """List every wiki category (form13f and form-13f are the same category, normalized)."""
@@ -90,15 +168,30 @@ class WikiToolkit(SophieToolkit):
     toolkit_name: ClassVar[str] = "wiki"
 
     def get_tools(self) -> list[BaseTool]:
-        return [wiki_search, wiki_get_page, wiki_list_categories, wiki_for_article]
+        return [
+            wiki_search,
+            wiki_search_sections,
+            wiki_outline,
+            wiki_get_section,
+            wiki_get_page,
+            wiki_list_categories,
+            wiki_for_article,
+        ]
 
     def system_prompt_fragment(self) -> str:
         return (
-            "WIKI TOOLKIT: 240 markdown pages under Sophie's public wiki, each the "
+            "WIKI TOOLKIT: ~250 markdown pages under Sophie's public wiki, each the "
             "machine-readable projection of a published article (Overview / Key Concepts / "
-            "Formulas / Key Takeaways sections). Use wiki_search first, then wiki_get_page for the "
-            "full text. This is Sophie's own published material — cite the page `path` for any "
-            "claim you attribute to it."
+            "Formulas / Key Takeaways sections). Content is addressable at three levels: "
+            "category > page > section.\n"
+            "Preferred flow for a narrow question ('how is X calculated?'): wiki_search_sections "
+            "to find the exact section, then wiki_get_section to read just that block — the "
+            "methodology pages run past 5,000 words, so this typically costs ~85% less context "
+            "than the whole page. For a broad question, wiki_search to find the page, then "
+            "wiki_outline to see its sections before deciding what to read. Reserve wiki_get_page "
+            "for when you genuinely need the entire document. "
+            "This is Sophie's own published material — cite the page `path` for any claim you "
+            "attribute to it."
         )
 
 
@@ -149,16 +242,103 @@ def option_wiki_get_page(
     return ui_envelope(text, "wiki_page", path=page.path, title=page.title, category=page.category)
 
 
+@tool
+def option_wiki_search_sections(
+    runtime: ToolRuntime,
+    query: Annotated[str, Field(description="Search keywords to find the specific section that answers the question (e.g. 'how is realized vol calculated', 'gamma flip').")],
+    label: Annotated[str | None, Field(description="Optional topic label filter (e.g. 'delta', 'DTE').")] = None,
+    limit: Annotated[int, Field(ge=1, le=50, description="Maximum number of section results to return (1 to 50).")] = 8,
+) -> str:
+    """Search the option-strategy wiki at SECTION level, returning the specific '##'/'###' blocks
+    that match. Prefer this over option_wiki_search for narrow questions ("how is X calculated?") —
+    the methodology pages are long, and reading one section instead of the whole page typically
+    costs ~85% less context. Pass a returned `path` + `heading` to option_wiki_get_section."""
+    wiki = _store_for(runtime)
+    results = wiki.search_sections(
+        query,
+        category=_OPTION_WIKI_CATEGORY,
+        label=label,
+        limit=limit,
+        as_of=runtime.context.run_ctx.as_of,
+    )
+    return _format_section_hits(results, "No option-strategy wiki sections matched that query.")
+
+
+@tool
+def option_wiki_outline(
+    runtime: ToolRuntime,
+    path: Annotated[str, Field(description="Exact wiki path (e.g. 'option-strategy/vol-regime-methodology').")],
+) -> str:
+    """List an option-strategy wiki page's section headings with nesting level and word counts,
+    without fetching the body. Use it to pick the section you need before spending context on the
+    full page. Refuses paths outside the option-strategy category."""
+    store = _store_for(runtime)
+    page = store.get_page(path)
+    if page is None:
+        return f"No wiki page found at path '{path}'. Use option_wiki_search to find the right path."
+    if page.category != _OPTION_WIKI_CATEGORY:
+        return f"'{path}' is outside the option-strategy wiki (category='{page.category}') — not available here."
+    outline = page.outline()
+    if not outline:
+        return f"'{path}' has no section headings."
+    lines = [
+        f"{'  ' if row['level'] == 3 else ''}- {row['heading']} ({row['words']}w)"
+        for row in outline
+    ]
+    total = sum(row["words"] for row in outline)
+    return f"{path} — {len(outline)} sections, {total} words total:\n" + "\n".join(lines)
+
+
+@tool
+def option_wiki_get_section(
+    runtime: ToolRuntime,
+    path: Annotated[str, Field(description="Exact wiki path (e.g. 'option-strategy/vol-regime-methodology').")],
+    heading: Annotated[str, Field(description="Exact section heading text from option_wiki_outline or option_wiki_search_sections. Case-insensitive.")],
+    include_subsections: Annotated[bool, Field(description="For a top-level ('##') heading, also include its nested '###' subsections. Default true.")] = True,
+) -> str:
+    """Fetch ONE section of an option-strategy wiki page by heading text instead of the whole page.
+    Math blocks and tables are preserved intact. Refuses paths outside the option-strategy
+    category. Cite the page `path` (and heading) for any claim taken from it."""
+    page = _store_for(runtime).get_page(path)
+    if page is None:
+        return f"No wiki page found at path '{path}'. Use option_wiki_search to find the right path."
+    if page.category != _OPTION_WIKI_CATEGORY:
+        return f"'{path}' is outside the option-strategy wiki (category='{page.category}') — not available here."
+    text = page.find_section(heading, include_subsections=include_subsections)
+    if text is None:
+        available = ", ".join(f"'{s.heading}'" for s in page.sections) or "(none)"
+        return f"No section titled '{heading}' on '{path}'. Available sections: {available}"
+    return ui_envelope(
+        f"# {page.title}\n\n{text}",
+        "wiki_page",
+        path=page.path,
+        title=page.title,
+        category=page.category,
+        heading=heading,
+    )
+
+
 class OptionWikiToolkit(SophieToolkit):
     toolkit_name: ClassVar[str] = "wiki_options"
 
     def get_tools(self) -> list[BaseTool]:
-        return [option_wiki_search, option_wiki_get_page]
+        return [
+            option_wiki_search,
+            option_wiki_search_sections,
+            option_wiki_outline,
+            option_wiki_get_section,
+            option_wiki_get_page,
+        ]
 
     def system_prompt_fragment(self) -> str:
         return (
             "OPTION WIKI TOOLKIT: Sophie's option-strategy wiki pages only — strategy mechanics, "
-            "Greeks, and related reference material. option_wiki_search first, then "
-            "option_wiki_get_page for full text. Cite the page `path` for any claim you attribute "
-            "to it. Market/macro/13F wiki content is out of scope here."
+            "Greeks, and related reference material. Content is addressable at page and section "
+            "level.\n"
+            "For a narrow question ('how is X calculated?'): option_wiki_search_sections, then "
+            "option_wiki_get_section to read just that block — much cheaper than the whole page. "
+            "For a broad question: option_wiki_search, then option_wiki_outline to see the "
+            "sections before choosing. Reserve option_wiki_get_page for when you need the entire "
+            "document. Cite the page `path` for any claim you attribute to it. Market/macro/13F "
+            "wiki content is out of scope here."
         )

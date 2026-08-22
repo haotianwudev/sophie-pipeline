@@ -100,7 +100,9 @@ class TestWiki:
     def test_search_ranks_gex_first(self, store):
         results = store.search("gamma exposure")
         assert results
-        assert results[0]["path"] == "option-strategy/gex"
+        # Prefix rather than an exact path: there are now both a 'gex' concept page and a
+        # 'gex-methodology' implementation spec, and either ranking first is correct.
+        assert results[0]["path"].startswith("option-strategy/gex")
 
     def test_every_page_has_title_and_path(self, store):
         for page in store._pages.values():

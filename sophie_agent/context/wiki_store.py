@@ -9,6 +9,13 @@ whole toolkit on a TS formatting change.
 Retrieval is BM25-lite pure Python: tokenize, IDF-weight, score over title x3, labels x2,
 summary x2, '##' headings x1.5, body x1. At 240 documents this needs no index build step, no
 embedding key, no vector-store dependency.
+
+Retrieval has two granularities: whole-page, and section (a '##' or '###' block). The section
+layer exists because the methodology pages have grown past 350 lines with 30 headings — pulling
+a whole page to answer "how is realized vol calculated" spends most of an agent's context on
+unrelated sections. Sections are addressed by *heading text*, not by URL anchor: the client's
+markdown renderer has no rehype-slug, so headings carry no `id` and '#fragment' links do not
+resolve. Heading text is the stable address here.
 """
 
 from __future__ import annotations
@@ -26,12 +33,96 @@ _FM_LINE_RE = re.compile(r"^([a-zA-Z]+):\s*(.*)$")
 _HEADING_RE = re.compile(r"^##\s+(.+)$", re.MULTILINE)
 _TOKEN_RE = re.compile(r"[a-z0-9]+")
 
+# Section splitting. Only '##' and '###' start a section; '#' is the page title and '####+' is
+# treated as body text (no wiki page nests that deep for navigational purposes).
+_SECTION_HEADING_RE = re.compile(r"^(#{2,3})\s+(.+?)\s*$", re.MULTILINE)
+
+# A '```' fence toggles code context. Headings inside fenced blocks are code, not structure.
+_FENCE_RE = re.compile(r"^\s*```")
+
+_PREAMBLE_HEADING = "(intro)"
+
 # form13f and form-13f are two separate on-disk categories that mean the same thing.
 _CATEGORY_ALIASES = {"form-13f": "form13f"}
 
 
 def _tokenize(text: str) -> list[str]:
     return _TOKEN_RE.findall(text.lower())
+
+
+def _snippet(body: str, max_chars: int = 240) -> str:
+    """First prose line of a section, for search results. Skips markdown table rows, math
+    blocks and list bullets so the preview shows a sentence rather than '|---|---|'."""
+    for line in body.splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith(("|", "$$", "```", ">", "-", "*", "#")):
+            continue
+        return stripped[:max_chars] + ("…" if len(stripped) > max_chars else "")
+    collapsed = " ".join(body.split())
+    return collapsed[:max_chars] + ("…" if len(collapsed) > max_chars else "")
+
+
+@dataclass
+class WikiSection:
+    """One '##' or '###' block of a page — the third addressing level below category and page."""
+
+    page_path: str
+    page_title: str
+    heading: str
+    level: int  # 2 for '##', 3 for '###'
+    parent_heading: str | None  # the enclosing '##' for a level-3 section
+    body: str  # this section's own text, excluding nested subsections
+
+    @property
+    def word_count(self) -> int:
+        return len(self.body.split())
+
+    @property
+    def breadcrumb(self) -> str:
+        """Human/agent-readable address, e.g. 'option-strategy/x > Core Signals > Why 20 days?'."""
+        parts = [self.page_path]
+        if self.parent_heading:
+            parts.append(self.parent_heading)
+        parts.append(self.heading)
+        return " > ".join(parts)
+
+
+def _split_sections(content: str) -> list[tuple[str, int, str | None, str]]:
+    """Split markdown into (heading, level, parent_heading, body) tuples.
+
+    Headings inside fenced code blocks are ignored — a '## ' line in a shell example is not a
+    section boundary. Any text before the first heading becomes a synthetic preamble section so
+    a page's opening lines are never unreachable.
+    """
+    lines = content.splitlines()
+    fenced = False
+    # (heading, level, parent, [body lines])
+    blocks: list[tuple[str, int, str | None, list[str]]] = []
+    current: tuple[str, int, str | None, list[str]] = (_PREAMBLE_HEADING, 2, None, [])
+    last_h2: str | None = None
+
+    for line in lines:
+        if _FENCE_RE.match(line):
+            fenced = not fenced
+        m = None if fenced else _SECTION_HEADING_RE.match(line)
+        if m:
+            # Close the open block; drop an empty synthetic preamble rather than emit a blank one.
+            if current[0] != _PREAMBLE_HEADING or "".join(current[3]).strip():
+                blocks.append(current)
+            level = len(m.group(1))
+            heading = m.group(2).strip()
+            if level == 2:
+                last_h2 = heading
+                current = (heading, 2, None, [])
+            else:
+                current = (heading, 3, last_h2, [])
+        else:
+            current[3].append(line)
+
+    if current[0] != _PREAMBLE_HEADING or "".join(current[3]).strip():
+        blocks.append(current)
+
+    return [(h, lvl, parent, "\n".join(body).strip()) for h, lvl, parent, body in blocks]
 
 
 @dataclass
@@ -50,6 +141,56 @@ class WikiPage:
     @cached_property
     def headings(self) -> list[str]:
         return _HEADING_RE.findall(self.content)
+
+    @cached_property
+    def sections(self) -> list[WikiSection]:
+        return [
+            WikiSection(
+                page_path=self.path,
+                page_title=self.title,
+                heading=heading,
+                level=level,
+                parent_heading=parent,
+                body=body,
+            )
+            for heading, level, parent, body in _split_sections(self.content)
+        ]
+
+    def outline(self) -> list[dict]:
+        """Cheap table of contents — lets an agent pick a section without reading the page."""
+        return [
+            {
+                "heading": s.heading,
+                "level": s.level,
+                "parent": s.parent_heading,
+                "words": s.word_count,
+            }
+            for s in self.sections
+        ]
+
+    def find_section(self, heading: str, include_subsections: bool = True) -> str | None:
+        """Return one section's markdown, addressed by heading text (case-insensitive).
+
+        For a level-2 heading, `include_subsections` folds in its level-3 children — asking for
+        'Core Signals' should return the whole thing, not just the paragraph before its first
+        subsection.
+        """
+        want = heading.strip().lower()
+        sections = self.sections
+        for i, s in enumerate(sections):
+            if s.heading.strip().lower() != want:
+                continue
+            hashes = "#" * s.level
+            parts = [f"{hashes} {s.heading}", s.body] if s.body else [f"{hashes} {s.heading}"]
+            if include_subsections and s.level == 2:
+                for nxt in sections[i + 1:]:
+                    if nxt.level <= 2:
+                        break
+                    parts.append(f"{'#' * nxt.level} {nxt.heading}")
+                    if nxt.body:
+                        parts.append(nxt.body)
+            return "\n\n".join(p for p in parts if p).strip()
+        return None
 
 
 def _parse_frontmatter(raw: str) -> tuple[dict, str]:
@@ -97,6 +238,8 @@ class WikiStore:
         self._pages: dict[str, WikiPage] = {}
         self._index: dict[str, Counter[str]] | None = None
         self._doc_freq: Counter[str] | None = None
+        self._section_entries: list[tuple[WikiSection, Counter[str]]] | None = None
+        self._section_doc_freq: Counter[str] | None = None
         self._load()
 
     def _load(self) -> None:
@@ -200,6 +343,97 @@ class WikiStore:
 
     def get_page(self, path: str) -> WikiPage | None:
         return self._pages.get(path)
+
+    # -- section level -------------------------------------------------------------
+
+    def _build_section_index(self) -> None:
+        """Flat (section, weighted-terms) list. Built lazily and separately from the page index so
+        callers that only ever search pages don't pay for it."""
+        entries: list[tuple[WikiSection, Counter[str]]] = []
+        doc_freq: Counter[str] = Counter()
+        for page in self._pages.values():
+            for section in page.sections:
+                weighted: Counter[str] = Counter()
+                # Heading terms dominate: a section is usually found by what it's called.
+                for term in _tokenize(section.heading):
+                    weighted[term] += 4
+                if section.parent_heading:
+                    for term in _tokenize(section.parent_heading):
+                        weighted[term] += 2
+                # Page title/labels carry context so a section stays findable by its topic.
+                for term in _tokenize(page.title):
+                    weighted[term] += 2
+                for label in page.labels:
+                    for term in _tokenize(label):
+                        weighted[term] += 1
+                for term in _tokenize(section.body):
+                    weighted[term] += 1
+                entries.append((section, weighted))
+                for term in set(weighted):
+                    doc_freq[term] += 1
+        self._section_entries = entries
+        self._section_doc_freq = doc_freq
+
+    def search_sections(
+        self,
+        query: str,
+        category: str | None = None,
+        label: str | None = None,
+        limit: int = 8,
+        as_of: date | None = None,
+    ) -> list[dict]:
+        """Same scoring model as `search`, but each '##'/'###' block is its own document."""
+        if self._section_entries is None:
+            self._build_section_index()
+        assert self._section_entries is not None and self._section_doc_freq is not None
+
+        n_docs = max(len(self._section_entries), 1)
+        query_terms = _tokenize(query)
+        scores: list[tuple[float, WikiSection]] = []
+
+        for section, weighted in self._section_entries:
+            page = self._pages[section.page_path]
+            if category and self._normalize_category(page.category) != self._normalize_category(category):
+                continue
+            if label and label.lower() not in {l.lower() for l in page.labels}:
+                continue
+            if as_of and page.page_date and page.page_date > as_of.isoformat():
+                continue
+            score = 0.0
+            for term in query_terms:
+                tf = weighted.get(term, 0)
+                if tf == 0:
+                    continue
+                idf = math.log((n_docs + 1) / (self._section_doc_freq.get(term, 0) + 1)) + 1
+                score += tf * idf
+            if score > 0:
+                scores.append((score, section))
+
+        scores.sort(key=lambda x: x[0], reverse=True)
+        return [
+            {
+                "path": s.page_path,
+                "title": s.page_title,
+                "heading": s.heading,
+                "level": s.level,
+                "parent": s.parent_heading,
+                "breadcrumb": s.breadcrumb,
+                "words": s.word_count,
+                "snippet": _snippet(s.body),
+                "score": round(sc, 3),
+            }
+            for sc, s in scores[:limit]
+        ]
+
+    def get_section(self, path: str, heading: str, include_subsections: bool = True) -> str | None:
+        page = self._pages.get(path)
+        if page is None:
+            return None
+        return page.find_section(heading, include_subsections=include_subsections)
+
+    def get_outline(self, path: str) -> list[dict] | None:
+        page = self._pages.get(path)
+        return None if page is None else page.outline()
 
     def list_categories(self) -> list[str]:
         cats = {self._normalize_category(p.category) for p in self._pages.values()}
