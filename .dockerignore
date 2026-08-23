@@ -1,0 +1,17 @@
+# The root Dockerfile copies only the handful of modules the SPX snapshot job needs, but the
+# build context is still uploaded to Cloud Build in full -- so keeping it small keeps deploys fast.
+.git
+.github
+.venv
+__pycache__
+**/__pycache__
+*.pyc
+.pytest_cache
+.vscode
+logs
+runs
+test
+notebooks
+*.log
+*.ipynb
+.env

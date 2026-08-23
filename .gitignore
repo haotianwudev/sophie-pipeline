@@ -54,6 +54,9 @@ Thumbs.db
 *.txt
 # Cloud Run deploy needs this in the repo (GitHub Actions checks out from git, not disk)
 !services/spx-options-api/requirements.txt
+# Same for the snapshot ETL job. `gcloud run jobs deploy --source` falls back to .gitignore when
+# no .gcloudignore exists, so a file ignored here never reaches the build context at all.
+!services/spx-snapshot-etl/requirements.txt
 
 # PDF files
 *.pdf

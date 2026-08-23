@@ -1,0 +1,18 @@
+# Deliberately NOT the full Poetry environment. The pipeline's pyproject carries langchain,
+# xgboost, shap, backtrader and friends -- several GB of image for a job that fetches a JSON
+# feed and writes to Postgres. This is the minimal closure of what
+# src/agents/spx_option_snapshot.py and src/tools/api_cboe.py actually import.
+requests==2.32.3
+psycopg2-binary==2.9.10
+pandas==2.2.3
+numpy==1.26.4
+pyarrow==17.0.0
+pandas-market-calendars==5.1.0
+google-cloud-storage==2.18.2
+
+# Pulled in by src/tools/api_db.py rather than by the ETL itself. Kept so the job can use the
+# platform's shared get_db_connection() helper instead of hand-rolling a second one that could
+# drift from it.
+pydantic==2.9.2
+python-dotenv==1.0.0
+colorama==0.4.6
