@@ -273,8 +273,8 @@ def compute_book_metrics(
     """
     call_vol = sum(c["volume"] for c in contracts if c["type"] == "CALL")
     put_vol = sum(c["volume"] for c in contracts if c["type"] == "PUT")
-    call_oi = sum(c["open_interest"] for c in contracts if c["type"] == "CALL")
-    put_oi = sum(c["open_interest"] for c in contracts if c["type"] == "PUT")
+    call_oi = sum(c.get("open_interest") or 0.0 for c in contracts if c["type"] == "CALL")
+    put_oi = sum(c.get("open_interest") or 0.0 for c in contracts if c["type"] == "PUT")
 
     # Dollar gamma per 1% move. The spot^2 term is not a typo: gamma * OI * 100 * spot * 1%
     # gives shares to hedge, and multiplying by spot again converts shares to dollars.
