@@ -133,7 +133,10 @@ def fetch_spx_spot_history(start_date: str, end_date: str) -> Dict[date, float]:
 
 def list_theta_expirations(symbol: str) -> List[str]:
     url = f"{THETA_BASE_URL}/v3/option/list/expirations?symbol={symbol}"
-    res = requests.get(url, timeout=60)
+    # SPXW alone has 700+ expirations (established earlier this session); its listing
+    # call has been observed timing out at 60s, unlike SPX/SPXQ/SPXPM's much smaller
+    # lists which return in seconds. Same generous-timeout fix as the per-job fetch.
+    res = requests.get(url, timeout=1800)
     res.raise_for_status()
     df = pd.read_csv(io.StringIO(res.text))
     return sorted(df["expiration"].astype(str).tolist())
@@ -155,7 +158,7 @@ def download_raw_chains(
     start_date: str = DEFAULT_START,
     end_date: str = DEFAULT_END,
     max_expiration: str = "2028-12-31",
-    delay_sec: float = 0.05,
+    delay_sec: float = 1.0,
 ) -> None:
     """Download all EOD chain files for SPX and SPXW from ThetaTerminal into
     data/raw_theta/<root>/<expiration>.csv -- one subfolder per root so the
@@ -165,6 +168,17 @@ def download_raw_chains(
     chunks, since ThetaData rejects a single request spanning more than that."""
     global_start = date.fromisoformat(start_date)
     global_end = date.fromisoformat(end_date)
+
+    # Consecutive-failure tracking across the WHOLE function (not per-symbol): a wedged
+    # Terminal (its single FREE-tier concurrent slot stuck from an earlier killed
+    # request) returns HTTP 429 instantly for every request, including cheap ones like
+    # list-expirations -- so left unchecked, a wedge burns through the entire remaining
+    # job list in seconds doing nothing, and the run looks "complete" with no exception
+    # raised. Fail fast and loud instead: 3 in a row raises immediately rather than
+    # silently no-oping through everything else.
+    consecutive_failures = 0
+    total_failures = 0
+    MAX_CONSECUTIVE_FAILURES = 3
 
     # SPX fans out into these roots per ThetaData's own symbology (confirmed via the
     # Terminal's NOT_FOUND hint). SPXQ (quarterlies) and SPXPM (PM-settled monthlies)
@@ -178,8 +192,17 @@ def download_raw_chains(
         logger.info(f"Fetching expirations for {symbol}...")
         try:
             exps = list_theta_expirations(symbol)
+            consecutive_failures = 0
         except Exception as exc:
             logger.error(f"Failed to list expirations for {symbol}: {exc}")
+            total_failures += 1
+            consecutive_failures += 1
+            if consecutive_failures >= MAX_CONSECUTIVE_FAILURES:
+                raise RuntimeError(
+                    f"{consecutive_failures} consecutive failures (last: listing {symbol}) -- "
+                    "Terminal is likely wedged (stuck concurrent-request slot from an earlier "
+                    "killed request). Restart the Terminal before retrying."
+                )
             continue
 
         target_exps = [e for e in exps if start_date <= e <= max_expiration]
@@ -212,17 +235,40 @@ def download_raw_chains(
             )
             try:
                 t0 = time.time()
-                res = requests.get(url, timeout=60)
+                # Full-year chunks for liquid expirations have taken up to 1400s (23+ min)
+                # to complete successfully -- a short timeout here doesn't just fail the
+                # request, it abandons a still-processing server-side job, which then looks
+                # like a wedged concurrent slot to every subsequent request. Generous timeout
+                # is the actual fix, not faster failure.
+                res = requests.get(url, timeout=1800)
                 if res.status_code == 200 and len(res.content) > 50:
                     out_file.write_bytes(res.content)
                     dt = time.time() - t0
                     logger.info(f"[{idx}/{len(jobs)}] Saved {symbol} {exp} {suffix or ''} ({len(res.content):,} bytes in {dt:.2f}s)")
+                    consecutive_failures = 0
                 else:
                     logger.warning(f"[{idx}/{len(jobs)}] {symbol} {exp} {suffix or ''} returned status {res.status_code} ({len(res.content)} bytes)")
+                    total_failures += 1
+                    consecutive_failures += 1
             except Exception as exc:
                 logger.error(f"Error fetching {symbol} {exp} {suffix or ''}: {exc}")
+                total_failures += 1
+                consecutive_failures += 1
+
+            if consecutive_failures >= MAX_CONSECUTIVE_FAILURES:
+                raise RuntimeError(
+                    f"{consecutive_failures} consecutive failures (last: {symbol} {exp}) -- "
+                    "Terminal is likely wedged (stuck concurrent-request slot from an earlier "
+                    "killed request). Restart the Terminal before retrying."
+                )
 
             time.sleep(delay_sec)
+
+    if total_failures > 0:
+        raise RuntimeError(
+            f"download_raw_chains finished with {total_failures} failed request(s) -- "
+            "not a clean run, do not treat this as complete. Check the log for details."
+        )
 
 
 # ---------------------------------------------------------------------------
