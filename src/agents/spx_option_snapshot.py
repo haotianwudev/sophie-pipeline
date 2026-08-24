@@ -62,6 +62,7 @@ def select_key_expirations(
     expirations: Sequence[str],
     as_of: date,
     oi_by_expiration: Optional[Dict[str, float]] = None,
+    carried: Optional[Sequence[str]] = None,
 ) -> List[str]:
     """The cycles worth storing per-strike: structural picks UNION measured-liquidity picks.
 
@@ -79,6 +80,20 @@ def select_key_expirations(
     2027-12-17 (1.19M OI, 22%) -- a 22x liquidity miss caused by ranking on date proximity, the
     very proxy this module warns against elsewhere. Measuring instead of guessing fixes it, and
     makes the arbitrary one-year anchor unnecessary: liquid far-dated cycles now qualify on merit.
+
+    **Carried** -- every cycle stored in the previous session that has not yet expired, passed in
+    as ``carried``. Both rules above are *rolling*: the 0-2 DTE window turns over daily and
+    ``weeklies[:4]`` turns over weekly, so without this the stored set churns by 1-4 cycles a
+    session. That churn is what breaks the day-over-day reads. A cycle appearing for the first
+    time has no prior row to difference against, and the flow queries cannot distinguish "this
+    cycle was not stored yesterday" from "this cycle held no open interest yesterday" -- so its
+    entire resting OI books as a same-day build, which is exactly what genuine conviction looks
+    like. Holding a cycle until it expires makes entry a one-time event per cycle and exit an
+    expiry, so any two consecutive sessions describe the same book.
+
+    Membership is therefore monotone over a cycle's life: once in, it stays in. That is bounded
+    -- cycles leave by expiring, never by drifting -- and costs a few extra cycles of storage in
+    exchange for a table whose own history is self-consistent.
 
     Falls back to structural-only when open interest is unavailable, which is a safe degradation
     -- a smaller slice, never a wrong one.
@@ -120,6 +135,18 @@ def select_key_expirations(
             for e, v in live_oi.items():
                 if busiest > 0 and v / busiest >= OI_SHARE_FLOOR:
                     add(date.fromisoformat(e))
+
+    # --- Carried ---
+    # Only cycles the feed still lists. A carried cycle that has vanished from the chain cannot
+    # be stored anyway, and one already past `as_of` is expired.
+    listed = {d for d, _ in parsed}
+    for e in carried or []:
+        try:
+            d = date.fromisoformat(e)
+        except ValueError:
+            continue
+        if d >= as_of and d in listed:
+            add(d)
 
     return sorted(d.isoformat() for d in picked)
 
@@ -318,8 +345,16 @@ def compute_book_metrics(
 # Snapshot assembly
 # ---------------------------------------------------------------------------
 
-def build_snapshot(payload: Dict[str, Any]) -> Dict[str, Any]:
-    """Turn a raw Cboe payload into the summary row and the per-strike slice."""
+def build_snapshot(
+    payload: Dict[str, Any],
+    carried_expirations: Optional[Sequence[str]] = None,
+) -> Dict[str, Any]:
+    """Turn a raw Cboe payload into the summary row and the per-strike slice.
+
+    ``carried_expirations`` is the previous session's stored cycle list, read by run_etl(). It is
+    passed in rather than queried here so this function stays pure and ``--dry-run`` stays a
+    read-only operation; omitting it degrades to the pre-hysteresis selection.
+    """
     spot = payload["spot_price"]
     contracts = payload["contracts"]
     if not contracts or spot <= 0:
@@ -331,7 +366,9 @@ def build_snapshot(payload: Dict[str, Any]) -> Dict[str, Any]:
     oi_by_exp: Dict[str, float] = {}
     for c in contracts:
         oi_by_exp[c["expiration"]] = oi_by_exp.get(c["expiration"], 0.0) + (c.get("open_interest") or 0.0)
-    key_exps = select_key_expirations(payload["expirations"], biz_date, oi_by_exp)
+    key_exps = select_key_expirations(
+        payload["expirations"], biz_date, oi_by_exp, carried_expirations
+    )
 
     # Live cycles only. When the feed is frozen (weekend, holiday) an already-expired contract
     # can still be labelled 0 DTE, and inverting IV on its frozen quotes is numerically
@@ -575,6 +612,26 @@ def fetch_previous_session(conn, biz_date: date) -> Optional[Dict[str, Any]]:
     return {"spot": row[0], "atm_iv": row[1], "atm_skew_slope": row[2]}
 
 
+def fetch_stored_expirations(conn, biz_date: date) -> List[str]:
+    """Cycles stored per-strike in the most recent session before `biz_date`.
+
+    Feeds the hysteresis rule in select_key_expirations(). Reads the single latest prior session
+    rather than a union over history, so a cycle that has genuinely left the table (because it
+    expired) is not resurrected by an old row.
+    """
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT DISTINCT expiration FROM spx_option_chain_snapshot
+            WHERE biz_date = (
+                SELECT MAX(biz_date) FROM spx_option_chain_snapshot WHERE biz_date < %s
+            )
+            """,
+            (biz_date,),
+        )
+        return [r[0].isoformat() for r in cur.fetchall()]
+
+
 def check_previous_session(conn, biz_date: date) -> Optional[str]:
     """Warn if the prior session is missing.
 
@@ -610,11 +667,21 @@ def run_etl(force: bool = False) -> Dict[str, Any]:
         return {"status": "skipped", "reason": "not a trading session", "run_date": str(run_date)}
 
     payload = fetch_cboe_spx_raw()
-    snap = build_snapshot(payload)
-    biz_date = snap["biz_date"]
+
+    # biz_date is resolved here as well as inside build_snapshot() so the carried-cycle read can
+    # happen before the snapshot is built. Both calls are pure functions of the same timestamp,
+    # so they cannot disagree.
+    biz_date = _resolve_biz_date(payload.get("cboe_timestamp") or "")
 
     conn = get_db_connection()
     try:
+        carried = fetch_stored_expirations(conn, biz_date)
+        snap = build_snapshot(payload, carried)
+        if snap["biz_date"] != biz_date:  # defensive: the two resolutions must agree
+            raise RuntimeError(
+                f"biz_date mismatch: {biz_date} vs {snap['biz_date']}"
+            )
+
         warning = check_previous_session(conn, biz_date)
         if warning:
             logger.warning(warning)
@@ -652,6 +719,10 @@ def run_etl(force: bool = False) -> Dict[str, Any]:
         "spot": snap["summary"]["spot"],
         "contracts_total": len(snap["all_rows"]),
         "contracts_stored": n_slice,
+        # Surfaced because a drop here is the signal that the day-over-day reads have gone thin:
+        # cycles carried but no longer selected on merit are exactly the ones holding the join up.
+        "cycles_carried": len(carried),
+        "cycles_stored": len({r["expiration"] for r in snap["slice_rows"]}),
         "archive": archive_uri,
         "warning": warning,
     }

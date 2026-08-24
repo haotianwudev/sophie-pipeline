@@ -194,7 +194,7 @@ stays queryable by date without a manifest.
 
 ### Which cycles are stored per-strike
 
-Two rules, unioned, because they capture different things:
+Three rules, unioned, because they capture different things:
 
 **Structural** — near-term dailies (DTE ≤ 2), the next 4 Friday weeklies, the next 4 standard
 monthlies. These matter for flow and gamma even when resting OI is modest; 0DTE in particular
@@ -202,6 +202,9 @@ carries enormous volume against small open interest.
 
 **Measured** — any cycle holding at least `OI_SHARE_FLOOR` (15%) of the busiest cycle's open
 interest, wherever it falls on the calendar.
+
+**Carried** — every cycle stored in the previous session that has not yet expired. See
+[Why membership is sticky](#why-membership-is-sticky) below.
 
 The measured rule exists because a purely structural filter systematically misses the far-dated
 quarterlies where institutional hedges sit. The original implementation had a date-proximity "LEAPS
@@ -226,6 +229,39 @@ never a wrong one.
 
 The remaining ~18% of book OI sits in cycles below the floor. They stay in the Parquet archive in
 full, so widening the filter later is a reprocessing job rather than a lost opportunity.
+
+### Why membership is sticky
+
+Both rules above are *rolling*. The DTE ≤ 2 window turns over every session and `weeklies[:4]` turns
+over every week, so on their own the stored set churns by 1–4 cycles a session:
+
+```
+2026-08-24 (Mon): +3 entering  -1 leaving
+2026-08-25 (Tue): +1 entering  -1 leaving
+2026-08-31 (Mon): +4 entering  -1 leaving
+```
+
+That churn is what breaks the day-over-day reads downstream. A cycle appearing for the first time has
+no prior row to difference against, and the flow queries could not distinguish *"this cycle was not
+stored yesterday"* from *"this cycle held no open interest yesterday"* — so its entire resting open
+interest booked as a same-day build, which is exactly what genuine conviction looks like. On a
+measured test where one 320-contract cycle (159,209 OI) was missing from the prior session, the
+reported net OI change came out **3.4× inflated** and both sides flipped from CHURNING to BUILDING.
+
+The carried rule makes membership **monotone over a cycle's life**: once stored, a cycle stays stored
+until it expires. Exits become expiries only; entries become a one-time event per cycle. Verified
+against the simulation above — every subsequent departure is an expiry, none is a drift.
+
+Hysteresis cannot remove *entries*, because a cycle listing for the first time genuinely has no prior
+row. That residue is handled on the read side instead: the GraphQL layer measures changes only over
+contracts present in **both** sessions and reports the coverage as `comparableShare`
+(`server/src/db/option-snapshot.js`). The two fixes are complementary — the ETL guarantees no
+unexplained exits, the query tolerates the unavoidable entries. Neither is sufficient alone: a
+skipped or failed run still leaves gaps that only the query-side guard survives.
+
+Cost is bounded, since cycles leave by expiring rather than by drifting: a handful of extra cycles
+carried past the point where they would otherwise qualify, in exchange for a table whose own history
+is self-consistent.
 
 ### SPX vs. SPXW
 
@@ -423,6 +459,8 @@ psql "$DATABASE_URL" -f sql/create_spx_option_snapshot_tables.sql
 
 ## 10. Related
 
+- `docs/cloud-etl-tracking.md` — operational tracking and status verification guide
+- `.agents/skills/sophie-etl-tracker/SKILL.md` — automated health check & tracking skill
 - `docs/../sql/create_spx_option_snapshot_tables.sql` — schema with inline rationale
 - `services/spx-options-api/` — the live Cloud Run service the viewer reads from (same Cboe source)
 - `ai-stock-suggestion-client/docs/option-viewer-deep-research.md` — how these metrics are consumed

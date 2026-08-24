@@ -50,9 +50,13 @@ def _dry_run() -> int:
     print("\n  --- volume ---")
     print(f"  expirations     {s['expiration_count']}")
     print(f"  contracts live  {s['contract_count']:,}")
+    print(f"  cycles selected {len({r['expiration'] for r in snap['slice_rows']})}")
     print(f"  slice stored    {len(snap['slice_rows']):,}  "
           f"({len(snap['slice_rows']) / max(1, len(snap['all_rows'])):.1%} of chain)")
-    print("\n  nothing written (dry run)\n")
+    # A dry run reads nothing from Postgres, so it cannot apply the carried-cycle rule. A real
+    # run selects the same cycles plus any still-live cycle stored last session, so treat these
+    # two counts as a floor rather than the exact slice.
+    print("\n  nothing written (dry run; counts exclude carried cycles)\n")
     return 0
 
 
