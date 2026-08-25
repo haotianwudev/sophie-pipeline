@@ -19,9 +19,20 @@ The `sophie-etl-tracker` skill automatically queries GCP Cloud Scheduler, Cloud 
 | :--- | :--- | :--- |
 | **Cloud Scheduler** | `spx-snapshot-etl-trigger` | `0 17 * * 1-5` (17:00 ET, Mon-Fri) |
 | **Cloud Run Job** | `spx-snapshot-etl` | Captures Cboe SPX chain & writes Postgres |
+| **Cloud Scheduler** | `vol-regime-etl-trigger` | `30 17 * * 1-5` (17:30 ET, Mon-Fri) |
+| **Cloud Run Job** | `vol-regime-etl` | Refreshes SPX/VIX in `prices`, recomputes VRP/regime |
 | **GCS Archive** | `gs://sophie-option-archive` | Full 28k+ contract Parquet archive |
 | **Secret Manager** | `sophie-database-url` | Neon PostgreSQL connection string |
+| **Secret Manager** | `sophie-fred-api-key` | FRED key — VIX3M (`VXVCLS`) term structure |
 | **API Service** | `spx-options-api` | Live SPX viewer HTTP service |
+
+The two ETL jobs are deliberately separate rather than one combined run: the option snapshot
+captures data that cannot be re-fetched, while the vol-regime job is fully self-healing on trailing
+windows. See [vol-regime-etl.md § 1](vol-regime-etl.md#1-why-this-is-a-separate-job-from-the-option-snapshot).
+
+> **Not covered by any cloud schedule:** the weekly Windows task `sophie-pipeline-upload`
+> (Fridays 19:00) still runs `src/run_uploads_tickers_free.py` — AAPL/MSFT/NVDA, investment clock,
+> quant trending. That one depends on the workstation being awake.
 
 ---
 

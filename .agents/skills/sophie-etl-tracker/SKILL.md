@@ -17,8 +17,8 @@ Check whether the scheduled trigger is `ENABLED` and configured with the correct
 gcloud scheduler jobs list --project longsky --location us-central1 --format="table(ID,STATE,SCHEDULE,TIME_ZONE,TARGET_TYPE)"
 ```
 
-- Verify `spx-snapshot-etl-trigger` is in the `ENABLED` state.
-- Verify the schedule is `0 17 * * 1-5` and time zone is `America/New_York`.
+- Verify `spx-snapshot-etl-trigger` is `ENABLED`, schedule `0 17 * * 1-5`, zone `America/New_York`.
+- Verify `vol-regime-etl-trigger` is `ENABLED`, schedule `30 17 * * 1-5`, zone `America/New_York`.
 
 ---
 
@@ -27,10 +27,13 @@ gcloud scheduler jobs list --project longsky --location us-central1 --format="ta
 Check the recent execution runs of the `spx-snapshot-etl` job:
 
 ```powershell
-gcloud run jobs executions list --job spx-snapshot-etl --project longsky --region us-central1 --limit 5 --format="table(EXECUTION,RUNNING,COMPLETE,CREATED,RUN_BY)"
+foreach ($job in @('spx-snapshot-etl','vol-regime-etl')) {
+  Write-Host "`n=== $job ==="
+  gcloud run jobs executions list --job $job --project longsky --region us-central1 --limit 5 --format="table(EXECUTION,RUNNING,COMPLETE,CREATED,RUN_BY)"
+}
 ```
 
-- Confirm the latest execution status shows `1 / 1` completed.
+- Confirm the latest execution of each shows `1 / 1` completed.
 - Note any failed executions or retries.
 
 ---
@@ -41,10 +44,15 @@ Read the last execution log to confirm successful completion and verify no data 
 
 ```powershell
 gcloud logging read "resource.type=cloud_run_job AND resource.labels.job_name=spx-snapshot-etl" --project longsky --limit 20 --format="value(textPayload)"
+gcloud logging read "resource.type=cloud_run_job AND resource.labels.job_name=vol-regime-etl"   --project longsky --limit 20 --format="value(textPayload)"
 ```
 
-- Check for the JSON payload summary (e.g., `{"status": "ok", "biz_date": "YYYY-MM-DD", "spot": ..., "contracts_stored": ..., "archive": "..."}`).
-- Ensure `"warning": null` and that no `GAP:` warning was raised.
+- Snapshot job: check for the JSON payload summary (e.g., `{"status": "ok", "biz_date": "YYYY-MM-DD", "spot": ..., "contracts_stored": ..., "cycles_carried": ..., "archive": "..."}`).
+  Ensure `"warning": null` and that no `GAP:` warning was raised. A falling `cycles_carried` is the
+  early sign that the day-over-day flow reads are thinning out.
+- Vol-regime job: confirm `Failed: 0` in the upload summary and a `Done! Upserted N rows.` line, then
+  check the latest reading prints a non-NULL `Term slope` (NULL means `FRED_API_KEY` is not reaching
+  the job).
 
 ---
 
@@ -77,7 +85,8 @@ gcloud run services list --project longsky --region us-central1 --format="table(
 Synthesize the findings into a clear, structured operational report:
 
 1. **Overall Pipeline Status**: | Healthy / Warning / Down
-2. **Latest Ingestion Date (`biz_date`)**: Confirm date and contract counts.
+2. **Latest Ingestion Date (`biz_date`)**: Confirm date and contract counts for the option snapshot,
+   and the latest `prices` date for SPX/VIX plus the newest `vol_regime_data` row.
 3. **Trigger Status**: Scheduler state and next expected trigger window.
 4. **Archive Status**: Confirmed GCS parquet archive path and size.
 5. **Action Items / Diagnostics**: Any failed jobs, missing sessions, or maintenance needed.

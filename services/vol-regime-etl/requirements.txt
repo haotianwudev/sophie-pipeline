@@ -1,0 +1,27 @@
+# Deliberately NOT the full Poetry environment. The pipeline's pyproject carries langchain,
+# xgboost, shap, backtrader and friends -- several GB of image for a job that pulls two index
+# series from Yahoo and writes a few dozen rows. This is the minimal closure of what
+# vol-regime/run.py, src/agents/vol_regime.py and the yfinance upload path actually import.
+pandas==2.2.3
+numpy==1.26.4
+psycopg2-binary==2.9.10
+requests==2.32.3
+
+# Price source for SPX (^GSPC) and VIX (^VIX). Imported lazily inside api_yfinance, but the
+# job's whole first step depends on it, so it is a hard requirement here.
+#
+# Pinned to match the working Poetry environment. An earlier 0.2.44 pin here failed in Cloud Run
+# with YFTzMissingError and "Expecting value: line 1 column 1" -- Yahoo returning non-JSON to the
+# old client's auth flow. Keep this in step with pyproject rather than pinning independently.
+yfinance==0.2.61
+
+# VIX3M (VXVCLS) for term structure. Also a lazy import -- and genuinely optional at runtime:
+# without FRED_API_KEY the agent logs a warning and writes NULL term_slope rather than failing.
+fredapi==0.5.2
+
+# Pulled in by src/tools/api_db.py and src/tools/db_upload.py rather than by the ETL itself.
+# Kept so the job uses the platform's shared get_db_connection() and upload_prices() helpers
+# instead of hand-rolling copies that could drift from them.
+pydantic==2.9.2
+python-dotenv==1.0.0
+colorama==0.4.6

@@ -57,6 +57,9 @@ Thumbs.db
 # Same for the snapshot ETL job. `gcloud run jobs deploy --source` falls back to .gitignore when
 # no .gcloudignore exists, so a file ignored here never reaches the build context at all.
 !services/spx-snapshot-etl/requirements.txt
+# And for the vol-regime job, which uploads its context via `gcloud builds submit` -- same
+# .gitignore fallback, same failure mode (COPY of a file that was never uploaded).
+!services/vol-regime-etl/requirements.txt
 
 # PDF files
 *.pdf

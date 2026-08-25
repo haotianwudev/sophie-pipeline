@@ -1,0 +1,18 @@
+# Builds the vol-regime ETL image with an explicit -f, because `gcloud run jobs deploy --source`
+# only ever picks up the Dockerfile at the root of the build context -- and that slot is already
+# taken by the SPX snapshot job. Invoked by deploy.ps1; not meant to be run directly.
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - -f
+      - services/vol-regime-etl/Dockerfile
+      - -t
+      - ${_IMAGE}
+      - .
+
+images:
+  - ${_IMAGE}
+
+options:
+  logging: CLOUD_LOGGING_ONLY

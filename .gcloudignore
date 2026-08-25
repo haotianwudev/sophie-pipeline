@@ -1,0 +1,49 @@
+# What gets uploaded to Cloud Build. Without this file gcloud falls back to .gitignore, which is
+# written for a different purpose and gets this wrong in both directions:
+#
+#   * `data/` there is meant to exclude the repo-root data/ dump, but the pattern is unanchored,
+#     so it also swallowed src/data/ -- the pydantic models both ETL images import. A directory
+#     exclusion cannot be undone by a file-level negation, so no `!src/data/...` line would have
+#     rescued it.
+#   * `*.txt` there needs a `!services/*/requirements.txt` negation per service, which is easy to
+#     forget when adding one (and has already broken a deploy once).
+#
+# Anchoring with a leading slash is the point of most of these: /data/ is the root dump,
+# src/data/ is source.
+
+.git
+.github
+.gitignore
+
+# Python / tooling noise
+.venv
+venv
+__pycache__
+**/__pycache__
+*.pyc
+.pytest_cache
+.vscode
+.idea
+
+# Local-only state. /data/ is the root raw-data dump (ThetaData pulls, exports); src/data/ is
+# source code and must NOT match -- hence the leading slash.
+/data/
+logs
+runs
+notebooks
+test
+scripts
+research
+*.log
+*.ipynb
+
+# Secrets never belong in a build context; both jobs read theirs from Secret Manager.
+.env
+.env.*
+
+# Large artefacts
+*.pdf
+*.png
+*.parquet
+*.csv
+*.sqlite3
