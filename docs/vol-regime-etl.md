@@ -130,5 +130,6 @@ AAPL/MSFT/NVDA plus the investment clock and quant trending — and never touche
 `upload_market_indices_*`. `prices` had been loaded by hand on 2026-08-21 and stopped at 08-19, so
 the regime signals were computed on a stale tape.
 
-`src/run_uploads_market_indices.py` is now redundant with this job's step 1 and is a candidate for
-removal.
+`src/run_uploads_market_indices.py` was deleted in the same change: its entire job — a trailing-window
+SPX/VIX refresh into `prices` — is now step 1 here, on a schedule that actually fires. Nothing
+referenced it outside this document.
