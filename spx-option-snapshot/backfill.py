@@ -50,6 +50,14 @@ THETA_BASE_URL = "http://localhost:25503"
 RAW_DATA_DIR = ROOT / "data" / "raw_theta"
 ARCHIVE_DIR = ROOT / "data" / "spx_chain_archive"
 
+# Written in place of a real response body when ThetaData returns 472 (NO_DATA) -- lets the
+# exists-check treat a confirmed-empty chunk the same as a real download, and gives
+# process_backfill() a valid (if empty) CSV to read rather than nothing.
+CSV_HEADER_ROW = (
+    "symbol,expiration,strike,right,created,last_trade,open,high,low,close,volume,count,"
+    "bid_size,bid_exchange,bid,bid_condition,ask_size,ask_exchange,ask,ask_condition\n"
+)
+
 DEFAULT_START = "2024-01-02"
 DEFAULT_END = "2026-08-20"
 
@@ -245,6 +253,15 @@ def download_raw_chains(
                     out_file.write_bytes(res.content)
                     dt = time.time() - t0
                     logger.info(f"[{idx}/{len(jobs)}] Saved {symbol} {exp} {suffix or ''} ({len(res.content):,} bytes in {dt:.2f}s)")
+                    consecutive_failures = 0
+                elif res.status_code == 472:
+                    # ThetaData's documented NO_DATA code -- a valid query that legitimately has
+                    # no matching rows (e.g. a LEAPS expiration not yet listed during this chunk's
+                    # date range). Not a failure: write a header-only placeholder so the
+                    # exists-check skips it on every future attempt instead of re-querying a known
+                    # empty result forever, and don't touch the failure counters.
+                    out_file.write_text(CSV_HEADER_ROW)
+                    logger.info(f"[{idx}/{len(jobs)}] {symbol} {exp} {suffix or ''} -- no data in range (472), recorded as empty")
                     consecutive_failures = 0
                 else:
                     logger.warning(f"[{idx}/{len(jobs)}] {symbol} {exp} {suffix or ''} returned status {res.status_code} ({len(res.content)} bytes)")
