@@ -20,7 +20,7 @@ The `sophie-etl-tracker` skill automatically queries GCP Cloud Scheduler, Cloud 
 | **Cloud Scheduler** | `spx-snapshot-etl-trigger` | `0 17 * * 1-5` (17:00 ET, Mon-Fri) |
 | **Cloud Run Job** | `spx-snapshot-etl` | Captures Cboe SPX chain & writes Postgres |
 | **Cloud Scheduler** | `vol-regime-etl-trigger` | `30 17 * * 1-5` (17:30 ET, Mon-Fri) |
-| **Cloud Run Job** | `vol-regime-etl` | Refreshes SPX/VIX in `prices`, recomputes VRP/regime |
+| **Cloud Run Job** | `vol-regime-etl` | Refreshes SPX/VIX in `prices`, recomputes VRP/regime, plus SqueezeMetrics DIX/GEX |
 | **GCS Archive** | `gs://sophie-option-archive` | Full 28k+ contract Parquet archive |
 | **Secret Manager** | `sophie-database-url` | Neon PostgreSQL connection string |
 | **Secret Manager** | `sophie-fred-api-key` | FRED key — VIX3M (`VXVCLS`) term structure |

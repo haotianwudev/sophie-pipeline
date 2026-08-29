@@ -12,6 +12,7 @@ signals into `vol_regime_data`.
 | Deploy | `services/vol-regime-etl/deploy.ps1 -Project longsky` |
 | Secrets | `sophie-database-url`, `sophie-fred-api-key` |
 | Tables | `prices` (SPX, VIX), `vol_regime_data` |
+| External feeds | Yahoo (yfinance), FRED (`VXVCLS`), SqueezeMetrics `DIX.csv` (no auth) |
 
 ## 1. Why this is a separate job from the option snapshot
 
@@ -53,6 +54,18 @@ term_slope       = VIX3M - VIX          (negative = backwardation = stress)
 `VIX3M` comes from **FRED (`VXVCLS`)**, not Yahoo, which no longer serves `^VIX3M` history. It is
 optional by design: without `FRED_API_KEY` the agent logs a warning and writes `NULL` term structure
 rather than failing the run.
+
+`dix` / `dix_gex` come from **SqueezeMetrics' free public CSV**
+(`https://squeezemetrics.com/monitor/static/DIX.csv`, no auth) — dark-pool sentiment and
+market-maker gamma exposure, independent of both the Yahoo price feed and this platform's own
+option-chain data. Same optional treatment as VIX3M: a fetch failure logs a warning and writes
+`NULL` rather than failing the run, since it's a third-party feed this ETL doesn't control the
+uptime of. History only goes back to **2011-05-02** (vs. 2000 for SPX/VIX), so expect `NULL`
+before then. `dix_gex` is deliberately not named just `gex` — it's SqueezeMetrics' own derivation
+(dollar-denominated dealer hedging obligation from their dark-pool data), not something computed
+from this platform's option-chain OI/gamma; a future OI-derived GEX (e.g. `spx_tape_data`,
+`spx_option_snapshot.net_gex_m`) is a different number by construction, and disagreement between
+the two is a signal, not a bug — don't merge the columns.
 
 ## 3. Data sources
 

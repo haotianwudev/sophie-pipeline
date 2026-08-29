@@ -36,12 +36,14 @@ Run manually:
     python -m src.agents.vol_regime
 """
 
+import io
 import math
 import os
 import datetime
 
 import numpy as np
 import pandas as pd
+import requests
 from colorama import Fore, Style
 from dotenv import load_dotenv
 
@@ -56,6 +58,11 @@ VRP_Z_MIN_PERIODS = 63
 # Stress thresholds
 VIX_RANK_STRESS = 0.80    # VIX in the top 20% of its trailing year
 FRED_VIX3M_SERIES = "VXVCLS"   # CBOE S&P 500 3-Month Volatility Index (Yahoo no longer serves ^VIX3M)
+
+# Free public feed behind squeezemetrics.com/monitor/dix's own chart — no auth, updates daily.
+# History starts 2011-05-02 (vs. this table's 2000 start for SPX/VIX), so dix/dix_gex are NULL
+# before then.
+DIX_CSV_URL = "https://squeezemetrics.com/monitor/static/DIX.csv"
 
 REGIME_HARVEST = "Harvest"
 REGIME_STRESSED = "Stressed Premium"
@@ -121,6 +128,22 @@ def fetch_vix3m_from_fred() -> pd.Series:
         return pd.Series(dtype=float)
 
 
+def fetch_dix_gex() -> pd.DataFrame:
+    """SqueezeMetrics DIX/GEX from their free public CSV. Optional -- both columns degrade to
+    NULL without it, same treatment as fetch_vix3m_from_fred(), since it's a third-party feed
+    this ETL doesn't control the uptime of."""
+    try:
+        resp = requests.get(DIX_CSV_URL, timeout=30, headers={"User-Agent": "sophie-pipeline"})
+        resp.raise_for_status()
+        df = pd.read_csv(io.StringIO(resp.text), usecols=["date", "dix", "gex"])
+        df["date"] = pd.to_datetime(df["date"])
+        return df.set_index("date")[["dix", "gex"]].astype(float)
+    except Exception as e:
+        print(f"{Fore.YELLOW}Could not fetch DIX/GEX from squeezemetrics.com "
+              f"({e}) — dix/dix_gex will be NULL{Style.RESET_ALL}")
+        return pd.DataFrame(columns=["dix", "gex"])
+
+
 def classify_regime(vrp_z: float, vix_rank: float, term_slope: float | None) -> str:
     """Two-axis regime label: is premium rich, and is the tape stressed?"""
     premium_rich = vrp_z > 0
@@ -172,10 +195,20 @@ def build_signals() -> pd.DataFrame:
     vix3m_aligned = vix3m.reindex(spx.index).ffill(limit=5) if len(vix3m) else pd.Series(
         index=spx.index, dtype=float)
 
+    dix_gex = fetch_dix_gex()
+    # No ffill here (unlike vix3m): a missing DIX/GEX row means squeezemetrics didn't publish
+    # that day, not a stale-data bridge worth papering over -- NULL is the honest answer.
+    dix_aligned = dix_gex["dix"].reindex(spx.index) if len(dix_gex) else pd.Series(
+        index=spx.index, dtype=float)
+    dix_gex_aligned = dix_gex["gex"].reindex(spx.index) if len(dix_gex) else pd.Series(
+        index=spx.index, dtype=float)
+
     out = pd.DataFrame({
         "spx_close": spx,
         "vix": vix,
         "vix3m": vix3m_aligned,
+        "dix": dix_aligned,
+        "dix_gex": dix_gex_aligned,
         "realized_vol_20d": rv20,
         "realized_vol_10d": rv10,
         "vrp": vrp,
@@ -223,9 +256,10 @@ UPSERT_SQL = """
         vrp, vrp_z, vrp_percentile, vrp_variance, downside_variance_share,
         fwd_realized_vol_21d, fwd_earned_premium,
         vix_rank, term_slope, term_structure,
+        dix, dix_gex,
         regime, regime_score
     ) VALUES (
-        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
     )
     ON CONFLICT (biz_date) DO UPDATE SET
         spx_close               = EXCLUDED.spx_close,
@@ -243,6 +277,8 @@ UPSERT_SQL = """
         vix_rank                = EXCLUDED.vix_rank,
         term_slope              = EXCLUDED.term_slope,
         term_structure          = EXCLUDED.term_structure,
+        dix                     = EXCLUDED.dix,
+        dix_gex                 = EXCLUDED.dix_gex,
         regime                  = EXCLUDED.regime,
         regime_score            = EXCLUDED.regime_score,
         updated_at              = CURRENT_TIMESTAMP
@@ -283,6 +319,7 @@ def run_etl(lookback_days: int | None = None) -> int:
                 _f(row.vrp_variance), _f(row.downside_variance_share),
                 _f(row.fwd_realized_vol_21d), _f(row.fwd_earned_premium),
                 _f(row.vix_rank), _f(row.term_slope), row.term_structure,
+                _f(row.dix), _f(row.dix_gex),
                 row.regime, _f(row.regime_score),
             ))
         conn.commit()
@@ -306,6 +343,11 @@ def run_etl(lookback_days: int | None = None) -> int:
         print(f"  Term slope:        {latest.term_slope:+.2f} ({latest.term_structure})")
     else:
         print("  Term slope:        N/A")
+    if not pd.isna(latest.dix):
+        print(f"  DIX:               {latest.dix:.2%}")
+        print(f"  GEX (SqueezeM.):   {latest.dix_gex:,.0f}")
+    else:
+        print("  DIX / GEX:         N/A")
     return len(signals)
 
 
