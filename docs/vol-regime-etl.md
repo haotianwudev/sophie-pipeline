@@ -12,7 +12,7 @@ signals into `vol_regime_data`.
 | Deploy | `services/vol-regime-etl/deploy.ps1 -Project longsky` |
 | Secrets | `sophie-database-url`, `sophie-fred-api-key` |
 | Tables | `prices` (SPX, VIX), `vol_regime_data` |
-| External feeds | Yahoo (yfinance), FRED (`VXVCLS`), SqueezeMetrics `DIX.csv` (no auth) |
+| External feeds | Yahoo (yfinance), FRED (`VXVCLS`), SqueezeMetrics `DIX.csv`, Cboe `DSPX_History.csv` (all no auth) |
 
 ## 1. Why this is a separate job from the option snapshot
 
@@ -66,6 +66,11 @@ before then. `dix_gex` is deliberately not named just `gex` — it's SqueezeMetr
 from this platform's option-chain OI/gamma; a future OI-derived GEX (e.g. `spx_tape_data`,
 `spx_option_snapshot.net_gex_m`) is a different number by construction, and disagreement between
 the two is a signal, not a bug — don't merge the columns.
+
+`dspx` comes from **Cboe's own public CDN** (`https://cdn.cboe.com/api/global/us_indices/daily_prices/DSPX_History.csv`,
+no auth) — the S&P 500 Dispersion Index, an implied-correlation proxy (spread between index-level
+and single-name implied vol). Same optional/NULL-on-failure treatment as the other two feeds.
+Shortest history of the three: starts **2014-06-19**.
 
 ## 3. Data sources
 

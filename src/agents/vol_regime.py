@@ -64,6 +64,11 @@ FRED_VIX3M_SERIES = "VXVCLS"   # CBOE S&P 500 3-Month Volatility Index (Yahoo no
 # before then.
 DIX_CSV_URL = "https://squeezemetrics.com/monitor/static/DIX.csv"
 
+# Cboe's own public CDN, no auth, updates daily. S&P 500 Dispersion Index -- implied correlation
+# proxy (spread between index-level and single-stock implied vol). History starts 2014-06-19, the
+# shortest of the three external feeds this agent pulls.
+DSPX_CSV_URL = "https://cdn.cboe.com/api/global/us_indices/daily_prices/DSPX_History.csv"
+
 REGIME_HARVEST = "Harvest"
 REGIME_STRESSED = "Stressed Premium"
 REGIME_THIN = "Thin"
@@ -144,6 +149,21 @@ def fetch_dix_gex() -> pd.DataFrame:
         return pd.DataFrame(columns=["dix", "gex"])
 
 
+def fetch_dspx() -> pd.Series:
+    """Cboe DSPX (S&P 500 Dispersion Index) from their free public CDN. Optional -- same
+    degrade-to-NULL treatment as the other two external feeds."""
+    try:
+        resp = requests.get(DSPX_CSV_URL, timeout=30, headers={"User-Agent": "sophie-pipeline"})
+        resp.raise_for_status()
+        df = pd.read_csv(io.StringIO(resp.text))
+        df["DATE"] = pd.to_datetime(df["DATE"], format="%m/%d/%Y")
+        return df.set_index("DATE")["DSPX"].astype(float)
+    except Exception as e:
+        print(f"{Fore.YELLOW}Could not fetch DSPX from cdn.cboe.com "
+              f"({e}) — dspx will be NULL{Style.RESET_ALL}")
+        return pd.Series(dtype=float)
+
+
 def classify_regime(vrp_z: float, vix_rank: float, term_slope: float | None) -> str:
     """Two-axis regime label: is premium rich, and is the tape stressed?"""
     premium_rich = vrp_z > 0
@@ -203,12 +223,17 @@ def build_signals() -> pd.DataFrame:
     dix_gex_aligned = dix_gex["gex"].reindex(spx.index) if len(dix_gex) else pd.Series(
         index=spx.index, dtype=float)
 
+    dspx = fetch_dspx()
+    dspx_aligned = dspx.reindex(spx.index) if len(dspx) else pd.Series(
+        index=spx.index, dtype=float)
+
     out = pd.DataFrame({
         "spx_close": spx,
         "vix": vix,
         "vix3m": vix3m_aligned,
         "dix": dix_aligned,
         "dix_gex": dix_gex_aligned,
+        "dspx": dspx_aligned,
         "realized_vol_20d": rv20,
         "realized_vol_10d": rv10,
         "vrp": vrp,
@@ -256,10 +281,10 @@ UPSERT_SQL = """
         vrp, vrp_z, vrp_percentile, vrp_variance, downside_variance_share,
         fwd_realized_vol_21d, fwd_earned_premium,
         vix_rank, term_slope, term_structure,
-        dix, dix_gex,
+        dix, dix_gex, dspx,
         regime, regime_score
     ) VALUES (
-        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
     )
     ON CONFLICT (biz_date) DO UPDATE SET
         spx_close               = EXCLUDED.spx_close,
@@ -279,6 +304,7 @@ UPSERT_SQL = """
         term_structure          = EXCLUDED.term_structure,
         dix                     = EXCLUDED.dix,
         dix_gex                 = EXCLUDED.dix_gex,
+        dspx                    = EXCLUDED.dspx,
         regime                  = EXCLUDED.regime,
         regime_score            = EXCLUDED.regime_score,
         updated_at              = CURRENT_TIMESTAMP
@@ -319,7 +345,7 @@ def run_etl(lookback_days: int | None = None) -> int:
                 _f(row.vrp_variance), _f(row.downside_variance_share),
                 _f(row.fwd_realized_vol_21d), _f(row.fwd_earned_premium),
                 _f(row.vix_rank), _f(row.term_slope), row.term_structure,
-                _f(row.dix), _f(row.dix_gex),
+                _f(row.dix), _f(row.dix_gex), _f(row.dspx),
                 row.regime, _f(row.regime_score),
             ))
         conn.commit()
@@ -348,6 +374,8 @@ def run_etl(lookback_days: int | None = None) -> int:
         print(f"  GEX (SqueezeM.):   {latest.dix_gex:,.0f}")
     else:
         print("  DIX / GEX:         N/A")
+    print(f"  DSPX (Cboe):       {latest.dspx:.2f}" if not pd.isna(latest.dspx)
+          else "  DSPX (Cboe):       N/A")
     return len(signals)
 
 
