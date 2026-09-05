@@ -72,6 +72,3 @@ runs/
 
 # Data directory
 data/
-
-# paper-index: rebuilt from sophie-desk/papers markdown, not source of truth
-paper-index/papers.db

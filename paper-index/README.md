@@ -13,7 +13,10 @@ index -- rebuild it any time the papers change, don't edit `papers.db` by hand.
 python build_index.py
 ```
 
-Writes `paper-index/papers.db` (gitignored). Optional flags:
+Writes `sophie-desk/papers/.paper-index/papers.db` (gitignored there) -- inside
+the `sophie-desk` vault on purpose, not next to this script, so Obsidian's
+SQLite plugins can open it (they only accept vault-relative paths, not an
+arbitrary external file). Optional flags:
 
 ```
 python build_index.py --papers-dir <path to sophie-desk/papers> --db <output .db path>
@@ -40,7 +43,7 @@ See `schema.sql` for exact column types.
 
 ```python
 import sqlite3
-conn = sqlite3.connect("papers.db")
+conn = sqlite3.connect(r"F:\workspace\sophie-desk\papers\.paper-index\papers.db")
 conn.row_factory = sqlite3.Row
 
 # plain filter
@@ -48,6 +51,9 @@ conn.execute("SELECT slug, year FROM papers WHERE relevance = 'High' ORDER BY ye
 
 # full-text search
 conn.execute("SELECT title, authors_year FROM candidates_fts WHERE candidates_fts MATCH 'kelly'").fetchall()
+
+# a hyphenated term needs to be quoted as a phrase, or FTS5 parses the "-" as NOT
+conn.execute('SELECT slug FROM papers_fts WHERE papers_fts MATCH \'"HAR-RV"\'').fetchall()
 ```
 
 **sqlite3 CLI**: works for plain SQL, but the `sqlite3.exe` on this machine
@@ -58,8 +64,32 @@ for full-text search. Plain `SELECT`/`WHERE`/`GROUP BY` over `papers` and
 `candidates` works fine in the CLI:
 
 ```
-sqlite3 papers.db "SELECT topic, count(*) FROM candidates GROUP BY topic ORDER BY count(*) DESC"
+sqlite3 sophie-desk/papers/.paper-index/papers.db "SELECT topic, count(*) FROM candidates GROUP BY topic ORDER BY count(*) DESC"
 ```
+
+## Viewing it in Obsidian
+
+Since the DB lives inside the `sophie-desk` vault, a SQLite-aware community
+plugin can open it directly:
+
+1. In Obsidian, **Settings -> Community plugins -> Browse**, search for
+   **SQLite Explorer** ([repo](https://github.com/qf3l3k/obsidian-sqlite-explorer)),
+   install and enable it. (Alternatives: **SQLite DB** for charts/CSV export,
+   **SQL Viewer** for a lighter read-only browser.)
+2. Open `papers/.paper-index/papers.db` from the file tree (it may need
+   "detect all file extensions" or similar enabled in the plugin/vault settings
+   to show `.db` files) to get a table/schema browser with a read-only SQL runner.
+3. To embed a live query in a note instead, use a fenced code block:
+   ````
+   ```sqlite-query
+   SELECT topic, count(*) AS n FROM candidates GROUP BY topic ORDER BY n DESC
+   ```
+   ````
+   (exact fence syntax per the plugin's own docs -- check after installing,
+   in case it's changed).
+
+Query results are read-only and only refresh on rebuild + note refresh --
+nothing here can accidentally corrupt the markdown or the DB.
 
 ## Notes
 
