@@ -13,7 +13,7 @@ index -- rebuild it any time the papers change, don't edit `papers.db` by hand.
 python build_index.py
 ```
 
-Writes `sophie-desk/papers/.paper-index/papers.db` (gitignored there) -- inside
+Writes `sophie-desk/papers/paper-index/papers.db` (gitignored there) -- inside
 the `sophie-desk` vault on purpose, not next to this script, so Obsidian's
 SQLite plugins can open it (they only accept vault-relative paths, not an
 arbitrary external file). Optional flags:
@@ -43,7 +43,7 @@ See `schema.sql` for exact column types.
 
 ```python
 import sqlite3
-conn = sqlite3.connect(r"F:\workspace\sophie-desk\papers\.paper-index\papers.db")
+conn = sqlite3.connect(r"F:\workspace\sophie-desk\papers\paper-index\papers.db")
 conn.row_factory = sqlite3.Row
 
 # plain filter
@@ -64,7 +64,7 @@ for full-text search. Plain `SELECT`/`WHERE`/`GROUP BY` over `papers` and
 `candidates` works fine in the CLI:
 
 ```
-sqlite3 sophie-desk/papers/.paper-index/papers.db "SELECT topic, count(*) FROM candidates GROUP BY topic ORDER BY count(*) DESC"
+sqlite3 sophie-desk/papers/paper-index/papers.db "SELECT topic, count(*) FROM candidates GROUP BY topic ORDER BY count(*) DESC"
 ```
 
 ## Viewing it in Obsidian
@@ -76,7 +76,7 @@ plugin can open it directly:
    **SQLite Explorer** ([repo](https://github.com/qf3l3k/obsidian-sqlite-explorer)),
    install and enable it. (Alternatives: **SQLite DB** for charts/CSV export,
    **SQL Viewer** for a lighter read-only browser.)
-2. Open `papers/.paper-index/papers.db` from the file tree (it may need
+2. Open `papers/paper-index/papers.db` from the file tree (it may need
    "detect all file extensions" or similar enabled in the plugin/vault settings
    to show `.db` files) to get a table/schema browser with a read-only SQL runner.
 3. To embed a live query in a note instead, use a fenced code block:

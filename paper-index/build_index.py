@@ -4,7 +4,7 @@ Source of truth stays the markdown in sophie-desk/papers/ -- this script parses
 it into a queryable SQLite file. Safe to rerun any time; it fully replaces the
 DB contents on each run rather than trying to diff/update.
 
-The DB is written *inside* the sophie-desk vault (papers/.paper-index/papers.db)
+The DB is written *inside* the sophie-desk vault (papers/paper-index/papers.db)
 rather than next to this script, so an Obsidian SQLite plugin (e.g. SQLite
 Explorer) can open it directly -- those plugins require vault-relative paths,
 they can't point at an arbitrary file outside the vault.
@@ -21,7 +21,7 @@ from pathlib import Path
 import yaml
 
 DEFAULT_PAPERS_DIR = Path(__file__).resolve().parents[2] / "sophie-desk" / "papers"
-DEFAULT_DB_PATH = DEFAULT_PAPERS_DIR / ".paper-index" / "papers.db"
+DEFAULT_DB_PATH = DEFAULT_PAPERS_DIR / "paper-index" / "papers.db"
 SCHEMA_PATH = Path(__file__).resolve().parent / "schema.sql"
 
 FRONTMATTER_RE = re.compile(r"^---\n(.*?)\n---\n?(.*)$", re.DOTALL)
