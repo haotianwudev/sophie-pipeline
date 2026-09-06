@@ -17,6 +17,7 @@ import argparse
 import json
 import re
 import sqlite3
+from datetime import datetime, timezone
 from pathlib import Path
 
 import yaml
@@ -360,6 +361,11 @@ def build(
         # as planned (supervisor writing from Neon + Cloud Scheduler), not live.
         # Skipped gracefully, same as gdocs/ on a machine that doesn't have it.
         print(f"skip pipeline table: {pipeline_dir} not found (not implemented yet)")
+
+    conn.execute(
+        "INSERT INTO meta (key, value) VALUES ('built_at', ?)",
+        (datetime.now(timezone.utc).isoformat(timespec="seconds") + "Z",),
+    )
 
     conn.commit()
     conn.close()

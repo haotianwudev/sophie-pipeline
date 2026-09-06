@@ -2,6 +2,15 @@
 -- Rebuilt from scratch by build_index.py on every run (source of truth stays
 -- the markdown in sophie-desk/papers/ -- this DB is a disposable, queryable copy).
 
+-- Single row, overwritten every build -- answers "how stale is what I'm
+-- looking at right now" for any page rendering off this DB (papers/db-schema/
+-- STATUS.md in particular). Everything else here is fully replaced on every
+-- run, so this is the one place that tells you when "every run" last happened.
+CREATE TABLE meta (
+    key TEXT PRIMARY KEY,
+    value TEXT
+);
+
 CREATE TABLE papers (
     slug TEXT PRIMARY KEY,          -- filename stem, e.g. "bekaert-hoerova-2014-vix-variance-premium"
     title TEXT,
