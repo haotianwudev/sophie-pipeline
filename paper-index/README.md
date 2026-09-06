@@ -1,8 +1,10 @@
 # paper-index
 
-A local SQLite index built from the markdown notes in `sophie-desk/papers/`, for
-querying the paper library and the (1000+ row) follow-up candidate backlog
-without going through Obsidian Dataview.
+A local SQLite index built from the markdown notes across the `sophie-desk` vault --
+papers, the candidate backlog, gdocs, and the task board -- queryable from Python, a
+GUI client, or live inside Obsidian notes. As of 2026-09-05 this fully replaced
+Dataview across the vault (`Desk.md`, `Papers.md`, `Skills.md` all render off this DB
+now) -- Dataview can be uninstalled if nothing else in the vault still needs it.
 
 The markdown stays the source of truth. This is a **disposable, derived**
 index -- rebuild it any time the papers change, don't edit `papers.db` by hand.
@@ -19,7 +21,7 @@ SQLite plugins can open it (they only accept vault-relative paths, not an
 arbitrary external file). Optional flags:
 
 ```
-python build_index.py --papers-dir <path to sophie-desk/papers> --db <output .db path> --gdocs-dir <path to sophie-desk/gdocs>
+python build_index.py --papers-dir <path> --db <path> --gdocs-dir <path> --tasks-dir <path> --pipeline-dir <path>
 ```
 
 ## Tables
@@ -45,8 +47,26 @@ python build_index.py --papers-dir <path to sophie-desk/papers> --db <output .db
   silently skipped (no error) if `gdocs/` doesn't exist on the machine running
   `build_index.py` -- that directory is gitignored personal data, only present
   on the user's own workstation.
+- `tasks` -- one row per `tasks/*.md` and `tasks/done/*.md` file: `id` (primary
+  key), `title`, `lane`, `status`, `assignee`, `gate`, `repo`, `blocker`, `next`,
+  `probe`, `progress`, `probe_status`, `stall_flag`, `outcome`, `artifacts`,
+  `created`, `updated`, `in_done` (1 if the file lives in `tasks/done/`),
+  `file_path`. Parsed with a **lenient line-based reader, not real YAML** --
+  see the note below, this one matters.
+- `pipeline` -- one row per `notes/pipeline/*.md`: `table_name` (primary key),
+  `schedule`, `last_row`, `note`. Not implemented yet as of 2026-09 (that
+  folder doesn't exist -- it's planned, supervisor-written pipeline health);
+  this table stays empty until it does, skipped gracefully either way.
 
 See `schema.sql` for exact column types.
+
+**Tasks are parsed with a lenient line-based frontmatter reader, not `yaml.safe_load`.**
+A task's `progress`/`blocker`/`outcome` fields routinely hold raw probe output or
+error text (e.g. `ERROR: CreateProcessCommon:640: ...`) containing unquoted colons,
+which a real YAML parser reads as a nested mapping and rejects with "mapping values
+are not allowed here" -- confirmed live on 8 of 24 task files before this was fixed.
+`parse_flat_frontmatter()` mirrors `sophie-desk/supervisor/run.py`'s own parser:
+whatever follows a line's first `:` is the whole value, verbatim, never re-parsed.
 
 **A markdown-escaped `\|` inside a cell is respected**, not split on --
 `split_row()` splits on unescaped `|` only and unescapes `\|` back to `|`
@@ -99,14 +119,21 @@ plugin can open it directly:
 2. Open `papers/paper-index/papers.db` from the file tree (it may need
    "detect all file extensions" or similar enabled in the plugin/vault settings
    to show `.db` files) to get a table/schema browser with a read-only SQL runner.
-3. To embed a live query in a note instead, use a fenced code block:
+3. To embed a live query in a note instead, use a fenced code block with a
+   `source:` (vault-root path, leading `/`) and a `sql:` block scalar:
    ````
    ```sqlite-query
-   SELECT topic, count(*) AS n FROM candidates GROUP BY topic ORDER BY n DESC
+   source: /papers/paper-index/papers.db
+   sql: |
+     SELECT topic, count(*) AS n FROM candidates GROUP BY topic ORDER BY n DESC
    ```
    ````
-   (exact fence syntax per the plugin's own docs -- check after installing,
-   in case it's changed).
+   `Desk.md`, `Papers.md`, and `Skills.md` all use this now, every block
+   pointed at the same `papers.db` -- the plugin shares one in-memory
+   session across blocks on the same DB, so this doesn't reopen the file
+   per block. Display defaults to a `table`; `list` and `value` modes also
+   exist (see the plugin's own README for exact syntax, in case it's
+   changed since this was written).
 
 Query results are read-only and only refresh on rebuild + note refresh --
 nothing here can accidentally corrupt the markdown or the DB.
@@ -116,7 +143,9 @@ nothing here can accidentally corrupt the markdown or the DB.
 - `papers/option-writing/REVIEW-INDEX.md` is skipped (it's an index file, not
   a paper note -- no frontmatter).
 - Only `papers/<category>/*.md` folders are scanned for paper notes (currently
-  just `option-writing/`); `papers/candidates/` is parsed separately into the
-  `candidates` table.
+  just `option-writing/`); `papers/candidates/`, `papers/paper-index/`, and
+  `papers/db-schema/` are explicitly excluded from that scan (`NON_CATEGORY_DIRS`)
+  -- the first is parsed separately into `candidates`, the other two hold this
+  tool's own output/docs, not paper notes.
 - `papers/FOLLOWUP-CANDIDATES.md`'s "Passed on" table isn't indexed yet -- add
   it to `build_index.py` if that list grows large enough to need querying too.

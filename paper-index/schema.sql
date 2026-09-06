@@ -65,3 +65,42 @@ CREATE TABLE article_gdoc_matches (
     match_tier TEXT,                -- matched / no match (confirmed) / fetch failed
     matched_doc_id TEXT             -- references gdocs_index.doc_id; empty if no match
 );
+
+-- One row per tasks/*.md and tasks/done/*.md file -- the sophie-desk task
+-- board. Parsed with a lenient line-based frontmatter reader, NOT real YAML
+-- (see build_index.py's parse_flat_frontmatter for why: probe-error text in
+-- `progress` routinely contains unquoted colons that break a real parser).
+
+CREATE TABLE tasks (
+    id TEXT PRIMARY KEY,
+    title TEXT,
+    lane TEXT,                      -- content / research / platform
+    status TEXT,                    -- queued / active / blocked / gate / done
+    assignee TEXT,                  -- claude / agy / either / none
+    gate TEXT,                      -- g1 / g2 / g3 / empty
+    repo TEXT,
+    blocker TEXT,
+    next TEXT,
+    probe TEXT,
+    progress TEXT,                  -- written by the supervisor -- not hand-edited
+    probe_status TEXT,              -- OK / RUN / STALL / ERROR
+    stall_flag TEXT,                -- non-empty when active with no recent commit
+    outcome TEXT,
+    artifacts TEXT,
+    created TEXT,
+    updated TEXT,
+    in_done INTEGER,                -- 1 if the file lives in tasks/done/, else 0
+    file_path TEXT
+);
+
+-- One row per notes/pipeline/*.md -- supervisor-written pipeline health
+-- (fetched from Neon + Cloud Scheduler, survives the workstation being
+-- asleep). Not implemented yet as of 2026-09 -- this table stays empty
+-- until that folder exists; build_index.py skips it gracefully either way.
+
+CREATE TABLE pipeline (
+    table_name TEXT PRIMARY KEY,
+    schedule TEXT,
+    last_row TEXT,
+    note TEXT
+);

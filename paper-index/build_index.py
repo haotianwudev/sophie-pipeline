@@ -24,11 +24,14 @@ import yaml
 DEFAULT_PAPERS_DIR = Path(__file__).resolve().parents[2] / "sophie-desk" / "papers"
 DEFAULT_DB_PATH = DEFAULT_PAPERS_DIR / "paper-index" / "papers.db"
 DEFAULT_GDOCS_DIR = DEFAULT_PAPERS_DIR.parent / "gdocs"
+DEFAULT_TASKS_DIR = DEFAULT_PAPERS_DIR.parent / "tasks"
+DEFAULT_PIPELINE_DIR = DEFAULT_PAPERS_DIR.parent / "notes" / "pipeline"
 SCHEMA_PATH = Path(__file__).resolve().parent / "schema.sql"
 
 FRONTMATTER_RE = re.compile(r"^---\n(.*?)\n---\n?(.*)$", re.DOTALL)
 CANDIDATE_HEADER_MARKERS = ("Title (best guess)", "Authors / Year")
 ARTICLE_MATCH_HEADER_MARKERS = ("Slug", "Article Title")
+FLAT_LINE_RE = re.compile(r"^([A-Za-z_-]+):(.*)$")
 
 
 def _relative_path(path: Path, workspace_root: Path) -> Path:
@@ -59,6 +62,82 @@ def parse_paper_note(path: Path, category: str, workspace_root: Path) -> dict | 
         "citations_surfaced": meta.get("citations_surfaced"),
         "file_path": str(_relative_path(path, workspace_root)).replace("\\", "/"),
         "body": body,
+    }
+
+
+def parse_flat_frontmatter(block: str) -> dict:
+    """Line-based frontmatter parser for tasks/pipeline notes -- deliberately
+    NOT yaml.safe_load. A task's `progress`/`blocker`/`outcome` fields often
+    hold raw probe/error text (e.g. "ERROR: CreateProcessCommon:640: ...")
+    with unquoted colons; a real YAML parser reads a mid-line ": " as a
+    nested mapping and throws "mapping values are not allowed here". This
+    mirrors supervisor/run.py's own parse_frontmatter for exactly that
+    reason -- confirmed live: yaml.safe_load broke on 8 of 24 task files
+    before this fix, every one of them a probe-error or long free-text
+    value. Same one-line-per-key, no-colon-splitting contract as that
+    parser: whatever follows the first ":" is the whole value, verbatim."""
+    out: dict[str, str] = {}
+    for line in block.splitlines():
+        m = FLAT_LINE_RE.match(line)
+        if not m:
+            continue
+        key, val = m.group(1).strip(), m.group(2).strip()
+        if len(val) >= 2 and val[0] == val[-1] and val[0] in ('"', "'"):
+            val = val[1:-1]
+        out[key] = val
+    return out
+
+
+def parse_task_note(path: Path, in_done: bool, workspace_root: Path) -> dict | None:
+    text = path.read_text(encoding="utf-8")
+    match = FRONTMATTER_RE.match(text)
+    if not match:
+        return None
+    meta = parse_flat_frontmatter(match.group(1))
+    return {
+        "id": meta.get("id", path.stem),
+        "title": meta.get("title"),
+        "lane": meta.get("lane"),
+        "status": meta.get("status"),
+        "assignee": meta.get("assignee"),
+        "gate": meta.get("gate"),
+        "repo": meta.get("repo"),
+        "blocker": meta.get("blocker"),
+        "next": meta.get("next"),
+        "probe": meta.get("probe"),
+        "progress": meta.get("progress"),
+        "probe_status": meta.get("probe_status"),
+        "stall_flag": meta.get("stall_flag"),
+        "outcome": meta.get("outcome"),
+        "artifacts": meta.get("artifacts"),
+        "created": meta.get("created"),
+        "updated": meta.get("updated"),
+        "in_done": 1 if in_done else 0,
+        "file_path": str(_relative_path(path, workspace_root)).replace("\\", "/"),
+    }
+
+
+def collect_task_notes(tasks_dir: Path) -> list[tuple[Path, bool]]:
+    notes = [(p, False) for p in sorted(tasks_dir.glob("*.md"))]
+    done_dir = tasks_dir / "done"
+    if done_dir.is_dir():
+        notes.extend((p, True) for p in sorted(done_dir.glob("*.md")))
+    return notes
+
+
+def parse_pipeline_note(path: Path) -> dict | None:
+    """notes/pipeline/*.md -- supervisor-written pipeline health notes.
+    Same flat-frontmatter contract as tasks (`note` may hold free text)."""
+    text = path.read_text(encoding="utf-8")
+    match = FRONTMATTER_RE.match(text)
+    if not match:
+        return None
+    meta = parse_flat_frontmatter(match.group(1))
+    return {
+        "table_name": meta.get("table_name", path.stem),
+        "schedule": meta.get("schedule"),
+        "last_row": meta.get("last_row"),
+        "note": meta.get("note"),
     }
 
 
@@ -142,16 +221,25 @@ def parse_article_matches(path: Path) -> list[dict]:
     return rows
 
 
+NON_CATEGORY_DIRS = {"candidates", "paper-index", "db-schema"}
+
+
 def collect_paper_notes(papers_dir: Path) -> list[Path]:
     notes = []
     for category_dir in sorted(papers_dir.iterdir()):
-        if not category_dir.is_dir() or category_dir.name == "candidates":
+        if not category_dir.is_dir() or category_dir.name in NON_CATEGORY_DIRS:
             continue
         notes.extend(sorted(category_dir.glob("*.md")))
     return notes
 
 
-def build(papers_dir: Path, db_path: Path, gdocs_dir: Path | None = None) -> None:
+def build(
+    papers_dir: Path,
+    db_path: Path,
+    gdocs_dir: Path | None = None,
+    tasks_dir: Path | None = None,
+    pipeline_dir: Path | None = None,
+) -> None:
     workspace_root = papers_dir.parents[1]
 
     db_path.parent.mkdir(parents=True, exist_ok=True)
@@ -232,10 +320,52 @@ def build(papers_dir: Path, db_path: Path, gdocs_dir: Path | None = None) -> Non
     else:
         print(f"skip gdocs tables: {gdocs_dir} not found on this machine")
 
+    task_count = 0
+    if tasks_dir is not None and tasks_dir.is_dir():
+        for note_path, in_done in collect_task_notes(tasks_dir):
+            task = parse_task_note(note_path, in_done, workspace_root)
+            if task is None:
+                print(f"skip (no frontmatter): {note_path}")
+                continue
+            conn.execute(
+                """INSERT INTO tasks
+                   (id, title, lane, status, assignee, gate, repo, blocker, next,
+                    probe, progress, probe_status, stall_flag, outcome, artifacts,
+                    created, updated, in_done, file_path)
+                   VALUES (:id, :title, :lane, :status, :assignee, :gate, :repo,
+                           :blocker, :next, :probe, :progress, :probe_status,
+                           :stall_flag, :outcome, :artifacts, :created, :updated,
+                           :in_done, :file_path)""",
+                task,
+            )
+            task_count += 1
+    else:
+        print(f"skip tasks table: {tasks_dir} not found")
+
+    pipeline_count = 0
+    if pipeline_dir is not None and pipeline_dir.is_dir():
+        for note_path in sorted(pipeline_dir.glob("*.md")):
+            row = parse_pipeline_note(note_path)
+            if row is None:
+                print(f"skip (no frontmatter): {note_path}")
+                continue
+            conn.execute(
+                """INSERT INTO pipeline (table_name, schedule, last_row, note)
+                   VALUES (:table_name, :schedule, :last_row, :note)""",
+                row,
+            )
+            pipeline_count += 1
+    else:
+        # Not built yet as of 2026-09 -- Desk.md's Pipeline section documents this
+        # as planned (supervisor writing from Neon + Cloud Scheduler), not live.
+        # Skipped gracefully, same as gdocs/ on a machine that doesn't have it.
+        print(f"skip pipeline table: {pipeline_dir} not found (not implemented yet)")
+
     conn.commit()
     conn.close()
     print(f"Indexed {paper_count} papers and {candidate_count} candidates -> {db_path}")
     print(f"Indexed {gdoc_index_count} gdocs_index rows and {article_match_count} article_gdoc_matches rows")
+    print(f"Indexed {task_count} tasks rows and {pipeline_count} pipeline rows")
 
 
 if __name__ == "__main__":
@@ -243,5 +373,7 @@ if __name__ == "__main__":
     parser.add_argument("--papers-dir", type=Path, default=DEFAULT_PAPERS_DIR)
     parser.add_argument("--db", type=Path, default=DEFAULT_DB_PATH)
     parser.add_argument("--gdocs-dir", type=Path, default=DEFAULT_GDOCS_DIR)
+    parser.add_argument("--tasks-dir", type=Path, default=DEFAULT_TASKS_DIR)
+    parser.add_argument("--pipeline-dir", type=Path, default=DEFAULT_PIPELINE_DIR)
     args = parser.parse_args()
-    build(args.papers_dir, args.db, args.gdocs_dir)
+    build(args.papers_dir, args.db, args.gdocs_dir, args.tasks_dir, args.pipeline_dir)
