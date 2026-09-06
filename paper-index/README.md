@@ -19,7 +19,7 @@ SQLite plugins can open it (they only accept vault-relative paths, not an
 arbitrary external file). Optional flags:
 
 ```
-python build_index.py --papers-dir <path to sophie-desk/papers> --db <output .db path>
+python build_index.py --papers-dir <path to sophie-desk/papers> --db <output .db path> --gdocs-dir <path to sophie-desk/gdocs>
 ```
 
 ## Tables
@@ -34,8 +34,28 @@ python build_index.py --papers-dir <path to sophie-desk/papers> --db <output .db
   tables: `topic` (from filename), `title`, `authors_year`, `why`, `tags`,
   `surfaced_by`, `doc_id_source`, `status`.
 - `candidates_fts` -- FTS5 full-text search over `title`/`authors_year`/`why`/`tags`.
+- `gdocs_index` -- one row per entry in `sophie-desk/gdocs/index.json` (the raw
+  scan of the user's Google Drive research-session `.gdoc` stubs): `doc_id`
+  (primary key), `title`, `resource_key`, `relpath`, `mtime`.
+- `article_gdoc_matches` -- one row per entry in
+  `sophie-desk/gdocs/article-exact-matches.md`: `slug` (Sophie article slug,
+  primary key), `article_title`, `extracted_page_title`, `match_tier`
+  (`matched` / `no match (confirmed)` / `fetch failed`), `matched_doc_id`
+  (references `gdocs_index.doc_id`, empty when not matched). Both tables are
+  silently skipped (no error) if `gdocs/` doesn't exist on the machine running
+  `build_index.py` -- that directory is gitignored personal data, only present
+  on the user's own workstation.
 
 See `schema.sql` for exact column types.
+
+**A markdown-escaped `\|` inside a cell is respected**, not split on --
+`split_row()` splits on unescaped `|` only and unescapes `\|` back to `|`
+afterward. Hit live: one row in `article-exact-matches.md` has a literal `|`
+inside its Extracted Page Title (`theta.md \| Theta Research`), correctly
+escaped in the source; naive `str.split("|")` shifted every column after it
+by one, corrupting `match_tier`/`matched_doc_id` for that row -- and, it
+turned out, 3 rows in the `candidates` table with the same pattern in their
+`why`/`title` cells. Fixing the shared splitter fixed both at once.
 
 ## Querying
 

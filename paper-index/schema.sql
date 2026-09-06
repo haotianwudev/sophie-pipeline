@@ -43,3 +43,25 @@ CREATE VIRTUAL TABLE candidates_fts USING fts5(
     why,
     tags
 );
+
+-- The two tables below index sophie-desk/gdocs/ -- the user's personal Google
+-- Drive research-session index and article-linking backlog. That directory
+-- is gitignored (personal titles, not for the public repo); this DB is too,
+-- so pulling it in here is safe. Both tables are skipped (no error) when
+-- gdocs/ doesn't exist on the machine running build_index.py.
+
+CREATE TABLE gdocs_index (
+    doc_id TEXT PRIMARY KEY,        -- Google Drive doc id
+    title TEXT,                     -- .gdoc stub filename minus extension
+    resource_key TEXT,              -- often empty
+    relpath TEXT,                   -- path relative to the Drive sync root
+    mtime REAL                      -- epoch seconds
+);
+
+CREATE TABLE article_gdoc_matches (
+    slug TEXT PRIMARY KEY,          -- Sophie article slug
+    article_title TEXT,
+    extracted_page_title TEXT,      -- title as found in the fetched Drive doc
+    match_tier TEXT,                -- matched / no match (confirmed) / fetch failed
+    matched_doc_id TEXT             -- references gdocs_index.doc_id; empty if no match
+);

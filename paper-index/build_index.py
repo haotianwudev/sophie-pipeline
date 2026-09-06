@@ -14,6 +14,7 @@ Usage:
 """
 
 import argparse
+import json
 import re
 import sqlite3
 from pathlib import Path
@@ -22,10 +23,12 @@ import yaml
 
 DEFAULT_PAPERS_DIR = Path(__file__).resolve().parents[2] / "sophie-desk" / "papers"
 DEFAULT_DB_PATH = DEFAULT_PAPERS_DIR / "paper-index" / "papers.db"
+DEFAULT_GDOCS_DIR = DEFAULT_PAPERS_DIR.parent / "gdocs"
 SCHEMA_PATH = Path(__file__).resolve().parent / "schema.sql"
 
 FRONTMATTER_RE = re.compile(r"^---\n(.*?)\n---\n?(.*)$", re.DOTALL)
 CANDIDATE_HEADER_MARKERS = ("Title (best guess)", "Authors / Year")
+ARTICLE_MATCH_HEADER_MARKERS = ("Slug", "Article Title")
 
 
 def _relative_path(path: Path, workspace_root: Path) -> Path:
@@ -59,13 +62,22 @@ def parse_paper_note(path: Path, category: str, workspace_root: Path) -> dict | 
     }
 
 
+CELL_SPLIT_RE = re.compile(r"(?<!\\)\|")
+
+
 def split_row(line: str) -> list[str]:
+    """Split one markdown table row into cells. A literal `|` inside a cell
+    is written `\\|` per standard markdown table escaping -- splitting on
+    every unescaped `|` (not a naive str.split('|')) is what makes that
+    survive. Hit live: gdocs/article-exact-matches.md's 'theta.md \\| Theta
+    Research' row misparsed into 6 cells instead of 5 before this fix,
+    shifting Match Tier/Matched Doc ID by one column."""
     line = line.strip()
     if line.startswith("|"):
         line = line[1:]
     if line.endswith("|"):
         line = line[:-1]
-    return [cell.strip() for cell in line.split("|")]
+    return [cell.strip().replace("\\|", "|") for cell in CELL_SPLIT_RE.split(line)]
 
 
 def is_separator_row(cells: list[str]) -> bool:
@@ -102,6 +114,34 @@ def parse_candidates_file(path: Path) -> list[dict]:
     return rows
 
 
+def parse_article_matches(path: Path) -> list[dict]:
+    """Parse gdocs/article-exact-matches.md's single table: Slug, Article Title,
+    Extracted Page Title, Match Tier, Matched Doc ID."""
+    lines = path.read_text(encoding="utf-8").splitlines()
+    rows: list[dict] = []
+    i, n = 0, len(lines)
+    while i < n:
+        line = lines[i]
+        if line.strip().startswith("|") and all(m in line for m in ARTICLE_MATCH_HEADER_MARKERS):
+            if i + 1 < n and is_separator_row(split_row(lines[i + 1])):
+                j = i + 2
+                while j < n and lines[j].strip().startswith("|"):
+                    cells = split_row(lines[j])
+                    if len(cells) >= 5:
+                        rows.append({
+                            "slug": cells[0],
+                            "article_title": cells[1],
+                            "extracted_page_title": cells[2],
+                            "match_tier": cells[3],
+                            "matched_doc_id": cells[4],
+                        })
+                    j += 1
+                i = j
+                continue
+        i += 1
+    return rows
+
+
 def collect_paper_notes(papers_dir: Path) -> list[Path]:
     notes = []
     for category_dir in sorted(papers_dir.iterdir()):
@@ -111,7 +151,7 @@ def collect_paper_notes(papers_dir: Path) -> list[Path]:
     return notes
 
 
-def build(papers_dir: Path, db_path: Path) -> None:
+def build(papers_dir: Path, db_path: Path, gdocs_dir: Path | None = None) -> None:
     workspace_root = papers_dir.parents[1]
 
     db_path.parent.mkdir(parents=True, exist_ok=True)
@@ -159,14 +199,49 @@ def build(papers_dir: Path, db_path: Path) -> None:
             )
             candidate_count += 1
 
+    gdoc_index_count = 0
+    article_match_count = 0
+    if gdocs_dir is not None and gdocs_dir.is_dir():
+        index_json_path = gdocs_dir / "index.json"
+        if index_json_path.exists():
+            entries = json.loads(index_json_path.read_text(encoding="utf-8"))
+            for entry in entries:
+                conn.execute(
+                    """INSERT OR REPLACE INTO gdocs_index
+                       (doc_id, title, resource_key, relpath, mtime)
+                       VALUES (:doc_id, :title, :resource_key, :relpath, :mtime)""",
+                    entry,
+                )
+                gdoc_index_count += 1
+        else:
+            print(f"skip (not found): {index_json_path}")
+
+        matches_path = gdocs_dir / "article-exact-matches.md"
+        if matches_path.exists():
+            for row in parse_article_matches(matches_path):
+                conn.execute(
+                    """INSERT OR REPLACE INTO article_gdoc_matches
+                       (slug, article_title, extracted_page_title, match_tier, matched_doc_id)
+                       VALUES (:slug, :article_title, :extracted_page_title,
+                               :match_tier, :matched_doc_id)""",
+                    row,
+                )
+                article_match_count += 1
+        else:
+            print(f"skip (not found): {matches_path}")
+    else:
+        print(f"skip gdocs tables: {gdocs_dir} not found on this machine")
+
     conn.commit()
     conn.close()
     print(f"Indexed {paper_count} papers and {candidate_count} candidates -> {db_path}")
+    print(f"Indexed {gdoc_index_count} gdocs_index rows and {article_match_count} article_gdoc_matches rows")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--papers-dir", type=Path, default=DEFAULT_PAPERS_DIR)
     parser.add_argument("--db", type=Path, default=DEFAULT_DB_PATH)
+    parser.add_argument("--gdocs-dir", type=Path, default=DEFAULT_GDOCS_DIR)
     args = parser.parse_args()
-    build(args.papers_dir, args.db)
+    build(args.papers_dir, args.db, args.gdocs_dir)
