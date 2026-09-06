@@ -14,7 +14,6 @@ Usage:
 """
 
 import argparse
-import json
 import re
 import sqlite3
 from datetime import datetime, timezone
@@ -31,7 +30,6 @@ SCHEMA_PATH = Path(__file__).resolve().parent / "schema.sql"
 
 FRONTMATTER_RE = re.compile(r"^---\n(.*?)\n---\n?(.*)$", re.DOTALL)
 CANDIDATE_HEADER_MARKERS = ("Title (best guess)", "Authors / Year")
-ARTICLE_MATCH_HEADER_MARKERS = ("Slug", "Article Title")
 FLAT_LINE_RE = re.compile(r"^([A-Za-z_-]+):(.*)$")
 
 
@@ -194,32 +192,21 @@ def parse_candidates_file(path: Path) -> list[dict]:
     return rows
 
 
-def parse_article_matches(path: Path) -> list[dict]:
-    """Parse gdocs/article-exact-matches.md's single table: Slug, Article Title,
-    Extracted Page Title, Match Tier, Matched Doc ID."""
-    lines = path.read_text(encoding="utf-8").splitlines()
-    rows: list[dict] = []
-    i, n = 0, len(lines)
-    while i < n:
-        line = lines[i]
-        if line.strip().startswith("|") and all(m in line for m in ARTICLE_MATCH_HEADER_MARKERS):
-            if i + 1 < n and is_separator_row(split_row(lines[i + 1])):
-                j = i + 2
-                while j < n and lines[j].strip().startswith("|"):
-                    cells = split_row(lines[j])
-                    if len(cells) >= 5:
-                        rows.append({
-                            "slug": cells[0],
-                            "article_title": cells[1],
-                            "extracted_page_title": cells[2],
-                            "match_tier": cells[3],
-                            "matched_doc_id": cells[4],
-                        })
-                    j += 1
-                i = j
-                continue
-        i += 1
-    return rows
+def read_gdocs_source_db(db_path: Path) -> tuple[list[dict], list[dict]]:
+    """gdocs_index and article_gdoc_matches are no longer parsed from
+    markdown/JSON (2026-09-06) -- gdocs/db/gdocs.db is their source of truth
+    now, written directly by sophie-desk's sync_gdocs_index.py and
+    exact_match_gdocs.py. This just copies both tables' rows across; the
+    dict keys already match papers.db's own column names since both schemas
+    were designed together. See papers/db-schema/DATABASES.md."""
+    conn = sqlite3.connect(db_path)
+    try:
+        conn.row_factory = sqlite3.Row
+        gdocs_index_rows = [dict(r) for r in conn.execute("SELECT * FROM gdocs_index")]
+        article_match_rows = [dict(r) for r in conn.execute("SELECT * FROM article_gdoc_matches")]
+    finally:
+        conn.close()
+    return gdocs_index_rows, article_match_rows
 
 
 NON_CATEGORY_DIRS = {"candidates", "paper-index", "db-schema"}
@@ -291,10 +278,10 @@ def build(
     gdoc_index_count = 0
     article_match_count = 0
     if gdocs_dir is not None and gdocs_dir.is_dir():
-        index_json_path = gdocs_dir / "index.json"
-        if index_json_path.exists():
-            entries = json.loads(index_json_path.read_text(encoding="utf-8"))
-            for entry in entries:
+        gdocs_db_path = gdocs_dir / "db" / "gdocs.db"
+        if gdocs_db_path.exists():
+            gdocs_index_rows, article_match_rows = read_gdocs_source_db(gdocs_db_path)
+            for entry in gdocs_index_rows:
                 conn.execute(
                     """INSERT OR REPLACE INTO gdocs_index
                        (doc_id, title, resource_key, relpath, mtime)
@@ -302,12 +289,7 @@ def build(
                     entry,
                 )
                 gdoc_index_count += 1
-        else:
-            print(f"skip (not found): {index_json_path}")
-
-        matches_path = gdocs_dir / "article-exact-matches.md"
-        if matches_path.exists():
-            for row in parse_article_matches(matches_path):
+            for row in article_match_rows:
                 conn.execute(
                     """INSERT OR REPLACE INTO article_gdoc_matches
                        (slug, article_title, extracted_page_title, match_tier, matched_doc_id)
@@ -317,7 +299,7 @@ def build(
                 )
                 article_match_count += 1
         else:
-            print(f"skip (not found): {matches_path}")
+            print(f"skip (not found): {gdocs_db_path}")
     else:
         print(f"skip gdocs tables: {gdocs_dir} not found on this machine")
 
