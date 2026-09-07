@@ -10,7 +10,10 @@ This class deliberately owns as little machinery as possible — `create_agent` 
   manual SystemMessage prepend         `@dynamic_prompt` middleware (prompt varies per turn:
                                        the store listing and as_of change between calls)
   `self.chat_history` list             `checkpointer=` + `thread_id`, which also preserves
-                                       ToolMessages across turns (the manual list dropped them)
+                                       ToolMessages across turns (the manual list dropped them).
+                                       Sqlite-backed (not InMemorySaver), so a thread survives a
+                                       server restart — no more re-seeding from the client's
+                                       resent transcript.
   `structured()`'s 2nd LLM call        `response_format=ToolStrategy(...)`
   `max_iterations` (silently unused)   `ModelCallLimitMiddleware(run_limit=...)`
   nothing (context grew unbounded)     `ContextEditingMiddleware([ClearToolUsesEdit(...)])`
@@ -22,6 +25,8 @@ is now derived from the message list rather than tracked separately.
 
 from __future__ import annotations
 
+import sqlite3
+import threading
 from dataclasses import dataclass
 from typing import Any, AsyncIterator, Type
 
@@ -37,6 +42,7 @@ from langchain.agents.structured_output import ToolStrategy
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, ToolMessage
 from langchain_core.tools import BaseTool
 from langgraph.checkpoint.memory import InMemorySaver
+from langgraph.checkpoint.sqlite import SqliteSaver
 from pydantic import BaseModel
 
 from ..context.agent_context import SophieContext
@@ -48,6 +54,37 @@ from .models import ToolCallingNotSupportedError, build_chat_model, provider_fro
 __all__ = ["SophieAgent", "ToolAction", "ToolCallingNotSupportedError", "tool_trajectory"]
 
 DEFAULT_THREAD_ID = "default"
+
+_checkpointer: SqliteSaver | None = None
+_checkpointer_lock = threading.Lock()
+
+
+def _shared_checkpointer(config: AgentConfig) -> SqliteSaver:
+    """One sqlite-backed checkpointer per process, shared by every *production* SophieAgent
+    instance (see `record_runs` in __init__) — mirrors AgentRuntime's process-wide LLM cache
+    singleton. A single connection (check_same_thread=False) is safe here because SqliteSaver
+    serializes access with its own internal lock. Distinct agent profiles are still kept from
+    colliding on a reused thread_id via the profile-name prefix `_thread_key()` applies below (not
+    `checkpoint_ns` — LangGraph reserves that for subgraph nesting) — so persisting to disk means a
+    thread's history survives a server restart, which is what previously forced server.py to
+    re-seed history from the client's resent transcript on every fresh checkpoint (see
+    docs/SOPHIE_AGENT.md).
+
+    Test-constructed agents pass `record_runs=False` and get a private `InMemorySaver()` instead —
+    they reuse short literal thread_ids ("t1", "conv", ...) across many unrelated SophieAgent
+    instances in one pytest process, which only stays safe when each instance's checkpoint storage
+    is a private object rather than something shared and durable."""
+    global _checkpointer
+    if _checkpointer is None:
+        with _checkpointer_lock:
+            if _checkpointer is None:
+                path = config.checkpoint_db_path
+                path.parent.mkdir(parents=True, exist_ok=True)
+                conn = sqlite3.connect(str(path), check_same_thread=False)
+                saver = SqliteSaver(conn)
+                saver.setup()
+                _checkpointer = saver
+    return _checkpointer
 
 
 @dataclass(frozen=True)
@@ -144,7 +181,7 @@ class SophieAgent:
         self._fallback_models = fallback_models
         self._verbose = verbose
 
-        self._checkpointer = InMemorySaver()
+        self._checkpointer = _shared_checkpointer(self.config) if record_runs else InMemorySaver()
         self.agent = create_agent(
             model=self.llm,
             tools=self.tools,
@@ -223,8 +260,17 @@ class SophieAgent:
 
     # ---------------------------------------------------------------- internals
 
+    def _thread_key(self, thread_id: str | None) -> str:
+        # Prefixed with this agent's profile name so a client reusing the same AG-UI thread_id after
+        # switching persona/profile mid-conversation lands in separate checkpoint storage instead of
+        # resuming a different graph's message history — matters once the checkpointer is a shared,
+        # durable store rather than a private InMemorySaver per instance. (checkpoint_ns is *not*
+        # the right tool for this: LangGraph reserves it for subgraph nesting and get_state() raises
+        # if it doesn't resolve to a real subgraph name.)
+        return f"{self.name}:{thread_id or DEFAULT_THREAD_ID}"
+
     def _config(self, thread_id: str | None) -> dict:
-        return {"configurable": {"thread_id": thread_id or DEFAULT_THREAD_ID}}
+        return {"configurable": {"thread_id": self._thread_key(thread_id)}}
 
     def _invoke_config(self, ctx: SophieContext, thread_id: str | None) -> dict:
         cfg = self._config(thread_id)
@@ -360,4 +406,4 @@ class SophieAgent:
     def reset(self, thread_id: str | None = None) -> None:
         """Drop a thread's conversation state. A fresh thread_id is a fresh conversation, so this
         just clears the checkpoint for the given one."""
-        self._checkpointer.delete_thread((thread_id or DEFAULT_THREAD_ID))
+        self._checkpointer.delete_thread(self._thread_key(thread_id))

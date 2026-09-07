@@ -88,6 +88,10 @@ class AgentConfig:
         return _PIPELINE_ROOT / "logs" / "sophie_agent_cache.sqlite3"
 
     @property
+    def checkpoint_db_path(self) -> Path:
+        return _PIPELINE_ROOT / "logs" / "sophie_agent_checkpoints.sqlite3"
+
+    @property
     def runs_dir(self) -> Path:
         return _PIPELINE_ROOT / "runs"
 

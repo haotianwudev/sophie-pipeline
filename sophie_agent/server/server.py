@@ -11,13 +11,11 @@ from __future__ import annotations
 from collections import OrderedDict
 
 import requests
-from ag_ui.core import AssistantMessage, RunAgentInput, UserMessage
+from ag_ui.core import RunAgentInput, UserMessage
 from ag_ui.encoder import EventEncoder
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
-from langchain_core.messages import AIMessage, HumanMessage
-
 from src.llm.models import AVAILABLE_MODELS, OLLAMA_MODELS, ModelProvider, get_model_info
 
 from ..core.config import DEFAULT_CONFIG
@@ -36,8 +34,8 @@ app.add_middleware(
 )
 
 # thread_id -> AgentRuntime, so DataFrameStore persists across turns within a thread. Chat history
-# is NOT tracked here — AG-UI resends the full message list every run (see _convert_history), so
-# tracking it separately would double-track and risk drifting from what the client believes it sent.
+# is NOT tracked here — it lives in the agent's own durable (sqlite-backed) checkpointer, keyed by
+# the same thread_id, so tracking it here too would double-track and risk drifting from it.
 _MAX_THREADS = 50
 _runtimes: "OrderedDict[str, AgentRuntime]" = OrderedDict()
 
@@ -51,24 +49,6 @@ def _get_runtime(thread_id: str) -> AgentRuntime:
     if len(_runtimes) > _MAX_THREADS:
         _runtimes.popitem(last=False)
     return runtime
-
-
-def _convert_history(messages: list) -> list:
-    """AG-UI history -> LangChain messages, used only to SEED a thread the agent has no checkpoint
-    for (see run_agent). System/tool/developer messages are dropped: the agent supplies its own
-    system prompt, and tool observations are already folded into the prior assistant text.
-
-    Normally the agent's checkpointer is the source of truth for a thread's history — which is
-    strictly better than rebuilding from the client, because it retains ToolMessages that AG-UI's
-    message list does not carry. Seeding only matters when the server restarted mid-conversation
-    and the client still holds transcript the checkpointer lost."""
-    converted = []
-    for m in messages:
-        if isinstance(m, UserMessage):
-            converted.append(HumanMessage(content=m.content))
-        elif isinstance(m, AssistantMessage) and m.content:
-            converted.append(AIMessage(content=m.content))
-    return converted
 
 
 @app.get("/health")
@@ -212,13 +192,10 @@ async def run_agent(
     latest = input_data.messages[-1] if input_data.messages else None
     user_text = latest.content if isinstance(latest, UserMessage) else ""
 
-    # The checkpointer owns this thread's history. Only seed it from the client's resent transcript
-    # when there is no checkpoint yet, so a mid-conversation server restart doesn't lose context —
-    # and so a normal turn doesn't append a duplicate copy of everything the client resent.
+    # The checkpointer owns this thread's history and is now durable (sqlite-backed, see
+    # core/agent.py), so a server restart no longer loses a thread's messages — no seeding from the
+    # client's resent transcript needed.
     thread_id = input_data.thread_id
-    seed_history = None
-    if not agent.has_history(thread_id):
-        seed_history = _convert_history(input_data.messages[:-1])
 
     async def event_generator():
         encoder = EventEncoder()
@@ -228,7 +205,6 @@ async def run_agent(
             thread_id=thread_id,
             run_id=input_data.run_id,
             context=runtime.root_context(),
-            seed_history=seed_history,
         ):
             yield encoder.encode(event)
 

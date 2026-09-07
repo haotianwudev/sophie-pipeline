@@ -68,7 +68,7 @@ class used to implement by hand is now configuration passed to it.
 | Was hand-rolled | Now |
 |---|---|
 | manual `SystemMessage` prepend each turn | `@dynamic_prompt` middleware (the prompt genuinely varies per turn — store listing + as_of) |
-| `self.chat_history` list, rebuilt by the server | `checkpointer=InMemorySaver()` + `thread_id`; also retains `ToolMessage`s, which the list dropped |
+| `self.chat_history` list, rebuilt by the server | `checkpointer=` (sqlite-backed, so it survives a restart) + `thread_id`; also retains `ToolMessage`s, which the list dropped |
 | `structured()` running the loop then a **2nd** LLM call to repackage | `response_format=ToolStrategy(...)` — one graph, with validation retry |
 | `max_iterations` (accepted, then silently ignored) | `ModelCallLimitMiddleware(run_limit=..., exit_behavior="end")` |
 | nothing — context grew unbounded | `ContextEditingMiddleware([ClearToolUsesEdit(...)])` |
@@ -273,13 +273,21 @@ that picker was removed), `POST /agent/{profile}` →
 A `thread_id -> AgentRuntime` LRU registry (cap 50) keeps `DataFrameStore` alive across turns within
 a thread — a chain pulled in turn 1 is still queryable in turn 3.
 
-**History is now the checkpointer's, keyed by the same AG-UI `thread_id`.** Only the newest message is
-passed in; `_convert_history` is used *only* to seed a thread the agent has no checkpoint for, which
-happens when the server restarted mid-conversation while the client still holds the transcript
-(`agent.has_history(thread_id)` gates it). This is strictly better than rebuilding from the client
-every turn, because AG-UI's message list carries no `ToolMessage`s — verified live: turn 1 called
-`wiki_search` and cited `option-strategy/gex`; turn 2 answered "what path did you cite?" correctly
-with **zero** tool calls, straight from retained state.
+**History is the checkpointer's, keyed by the same AG-UI `thread_id`.** Only the newest message is
+passed in — everything else (including tool calls, which AG-UI's own message list doesn't carry) is
+replayed from the checkpoint. Verified live: turn 1 called `wiki_search` and cited
+`option-strategy/gex`; turn 2 answered "what path did you cite?" correctly with **zero** tool calls,
+straight from retained state.
+
+The checkpointer is sqlite-backed (one shared file, `logs/sophie_agent_checkpoints.sqlite3`), so a
+thread now survives a server restart. That replaced an older workaround: the client used to resend
+its whole transcript every turn just so a restarted server could rebuild what it lost — that code
+(`_convert_history`, `seed_history`) is gone now that nothing gets lost. Two things worth knowing if
+you touch this: agents built for tests (`record_runs=False`) still get an in-memory, throwaway
+store, not the shared sqlite one — the test suite reuses tiny thread ids like `"t1"` everywhere, and
+sharing real storage would make unrelated tests bleed into each other. And each thread key is
+prefixed with the agent's profile name, so switching persona mid-chat can't accidentally resume a
+different agent's conversation under the same `thread_id`.
 
 `RunFinished`/`RunError` now also carry AG-UI's `usage: [TokenUsage]`, populated from
 `RunContext.usage`. Those counts were already being accumulated and then discarded, so the UI had no
