@@ -7,9 +7,15 @@ and determines the current Investment Clock phase
 
 Methodology:
   Growth composite  = 50% OECD CLI + 20% INDPRO + 15% inv. ICSA + 15% inv. UNRATE
-  Inflation composite = 30% 5Y Breakeven (vs 2%) + 25% CPI YoY (vs 2%)
-                      + 20% PPI Final Demand YoY (vs 2%) + 15% CPI MoM ann (vs 2%) + 10% TCU
-  Normalization: EWM Z-score (span=24). All inflation components except TCU anchored to 2% target.
+  Inflation composite = 30% 5Y Breakeven (vs 2%) + 25% Core PCE YoY (vs 2%)
+                      + 20% PPI Final Demand YoY (vs 2%) + 15% Core PCE MoM ann (vs 2%) + 10% TCU
+  Normalization: EWM Z-score (span=24). Inflation components (except TCU) use
+  target_anchored_z against the Fed's 2% goal; growth components stay relative to trend.
+
+  Core PCE (PCEPILFE), not core CPI, drives the inflation composite: the FOMC's 2%
+  target is defined on PCE, and core CPI carries a structural +0.3pp wedge over it
+  (2000-present average), so anchoring core CPI to 2.0 would bake in a hawkish bias.
+  Core CPI is still fetched and stored for display — it lands ~2 weeks earlier.
 
 Run manually:
     python -m src.agents.investment_clock
@@ -40,7 +46,8 @@ FRED_SERIES_IDS = [
     "ICSA",              # Initial Jobless Claims (weekly)
     "INDPRO",            # Industrial Production Index (monthly)
     "UNRATE",            # Unemployment Rate (monthly)
-    "CPILFESL",          # Core CPI (monthly, index level)
+    "CPILFESL",          # Core CPI (monthly, index level) — display only
+    "PCEPILFE",          # Core PCE (monthly, index level) — drives inflation composite
     "TCU",               # Capacity Utilization (monthly)
     "T5YIE",             # 5-Year Breakeven Inflation Rate (daily)
     "PPIFID",            # PPI: Final Demand (monthly)
@@ -59,13 +66,20 @@ GROWTH_WEIGHTS = {
 
 INFLATION_WEIGHTS = {
     "T5YIE":       0.30,   # Leading: market expectation vs 2% target
-    "CPI_YOY":     0.25,   # Lagging confirmer vs 2% target
+    "PCE_YOY":     0.25,   # Lagging confirmer vs 2% target (the FOMC's own gauge)
     "PPI_YOY":     0.20,   # Pipeline leading (leads CPI 2-6 months), anchored to 2% target
-    "CPI_MOM_ANN": 0.15,   # Real-time inflection vs 2% target
+    "PCE_MOM_ANN": 0.15,   # Real-time inflection vs 2% target
     "TCU":         0.10,   # Capacity pressure
 }
 
 FED_TARGET = 2.0  # Fed's 2% inflation target — the neutral baseline
+
+# FRED lookback. Needs to comfortably exceed the table's earliest row (2014-04), because
+# the first ~24 months are consumed by the 12-month YoY lag plus the ewm min_periods=12
+# warm-up and produce no composite. Too short a window silently leaves early rows holding
+# whatever methodology last wrote them. Binding constraints on going further back are
+# PPIFID (starts 2009) and T5YIE (2003).
+LOOKBACK_YEARS = 15
 
 PHASE_MAP = {
     (True, False):  "Recovery",    # growth above trend, inflation below trend
@@ -116,19 +130,40 @@ def ewm_z_score(series: pd.Series, span: int = 24, min_periods: int = 12) -> pd.
     return z.ffill().fillna(0)
 
 
+def target_anchored_z(series: pd.Series, target: float,
+                      span: int = 24, min_periods: int = 12) -> pd.Series:
+    """Z-score measured against a FIXED target rather than the series' own moving mean.
+
+    Only the scale (EWM std) is rolling; the centre is pinned to `target`. This is the
+    difference between "inflation vs its own recent average" and "inflation vs the Fed's
+    2% goal" — the latter is what the Investment Clock quadrants actually mean.
+
+    Do NOT substitute ewm_z_score(series - target): subtracting a constant before an
+    EWM Z-score is algebraically a no-op, because ewm_mean(x - c) == ewm_mean(x) - c and
+    ewm_std(x - c) == ewm_std(x), so the constant cancels. A series parked at 3.4% for
+    two years scores z ~= 0 under that formulation, hiding persistent inflation entirely.
+    """
+    ewm_std = series.ewm(span=span, min_periods=min_periods, ignore_na=True).std()
+    z = (series - target) / ewm_std.replace(0, float('nan'))
+    return z.ffill().fillna(0)
+
+
 def compute_cpi_yoy(cpi: pd.Series) -> pd.Series:
-    """12-month percent change of CPI index level."""
-    return cpi.pct_change(12) * 100
+    """12-month percent change of CPI index level.
+
+    fill_method=None is required: pct_change pads NaN internally by default, which
+    would compare a stale index level against a 12-month-old one and report the result
+    as a fresh YoY. An unreleased month must stay NaN so callers can carry the last
+    genuine reading forward instead of inventing a new one.
+    """
+    return cpi.pct_change(12, fill_method=None) * 100
 
 
 def compute_cpi_mom_annualized(cpi: pd.Series) -> pd.Series:
     """Compound-annualized month-over-month CPI change.
-    Returns NaN when MoM is exactly 0 (forward-filled stale data)."""
-    mom = cpi.pct_change(1)
-    result = ((1 + mom) ** 12 - 1) * 100
-    # MoM=0 means the CPI value was forward-filled (data not yet released)
-    result[mom == 0] = float('nan')
-    return result
+    Unreleased months are NaN (see compute_cpi_yoy on fill_method)."""
+    mom = cpi.pct_change(1, fill_method=None)
+    return ((1 + mom) ** 12 - 1) * 100
 
 
 def clock_angle_from_z_scores(growth_z: float, inflation_z: float) -> float:
@@ -163,17 +198,21 @@ def safe_float(series: pd.Series, idx) -> float | None:
         return None
 
 
-def run_etl():
+def run_etl(backfill: bool = False):
     """
     Main ETL function. Fetches FRED data, computes EWM Z-scores,
     determines phases and clock angles, then upserts all monthly rows to DB.
+
+    backfill=False (default): closed months keep their stored Z-scores/phase.
+    backfill=True: recompute and overwrite every month. Only for methodology changes.
     """
     api_key = os.environ.get("FRED_API_KEY")
     if not api_key:
         raise ValueError("FRED_API_KEY environment variable not set")
 
-    # 10 years of data — need ~2yr warm-up for ewm(span=24)
-    start_date = (datetime.date.today() - datetime.timedelta(days=365 * 10)).strftime("%Y-%m-%d")
+    # see LOOKBACK_YEARS — needs ~2yr warm-up for ewm(span=24) before the first usable row
+    start_date = (datetime.date.today()
+                  - datetime.timedelta(days=365 * LOOKBACK_YEARS)).strftime("%Y-%m-%d")
 
     print(f"{Fore.CYAN}Fetching FRED series...{Style.RESET_ALL}")
 
@@ -195,15 +234,24 @@ def run_etl():
         else:
             monthly[sid] = series.resample("ME").last().ffill()
 
-    combined = pd.DataFrame(monthly).dropna(how="all").ffill()
+    # `reported` leaves each series NaN in months it has not published yet; `combined`
+    # forward-fills those gaps for display. Year-over-year signals must be derived from
+    # `reported`: computing them from the forward-filled frame compares a stale index
+    # level against one a full 12 months old, manufacturing a move that never happened.
+    # (e.g. Sept 2026 core CPI YoY read 2.22% off August's ffilled index vs 2.45% actual.)
+    reported = pd.DataFrame(monthly).dropna(how="all")
+    combined = reported.ffill()
 
-    # --- Derived signals ---
-    cpi_yoy = compute_cpi_yoy(combined["CPILFESL"])
-    cpi_mom_ann = compute_cpi_mom_annualized(combined["CPILFESL"]).ffill()
-    indpro_yoy = combined["INDPRO"].pct_change(12) * 100
-    icsa_yoy = combined["ICSA"].pct_change(12) * 100
-    unrate_diff = combined["UNRATE"].diff(12)
-    ppi_yoy = combined["PPIFID"].pct_change(12) * 100
+    # --- Derived signals (computed pre-ffill, then carried forward) ---
+    # Core PCE feeds the composite; core CPI is carried for display only.
+    pce_yoy = compute_cpi_yoy(reported["PCEPILFE"]).ffill()
+    pce_mom_ann = compute_cpi_mom_annualized(reported["PCEPILFE"]).ffill()
+    cpi_yoy = compute_cpi_yoy(reported["CPILFESL"]).ffill()
+    cpi_mom_ann = compute_cpi_mom_annualized(reported["CPILFESL"]).ffill()
+    indpro_yoy = (reported["INDPRO"].pct_change(12, fill_method=None) * 100).ffill()
+    icsa_yoy = (reported["ICSA"].pct_change(12, fill_method=None) * 100).ffill()
+    unrate_diff = reported["UNRATE"].diff(12).ffill()   # diff() does not pad
+    ppi_yoy = (reported["PPIFID"].pct_change(12, fill_method=None) * 100).ffill()
 
     # --- EWM Z-scores ---
     print(f"{Fore.CYAN}Computing EWM Z-scores...{Style.RESET_ALL}")
@@ -214,9 +262,11 @@ def run_etl():
     cli_deviation = combined["USALOLITONOSTSAM"] - 100
     cli_z = ewm_z_score(cli_deviation)
 
-    # INFLATION: CPI and breakeven signals compared to Fed's 2% target.
-    # Subtracting FED_TARGET before Z-scoring anchors "neutral" at 2%,
-    # so 2.4% YoY is positive (above target) instead of negative (below recent spike mean).
+    # GROWTH components stay relative (vs own trend) — "above/below trend" is the
+    # meaningful question for growth, and none of them has a fixed policy target.
+    # INFLATION components are anchored to the Fed's 2% target via target_anchored_z,
+    # so a persistently-above-target print stays positive instead of being absorbed
+    # into a drifting mean. TCU is excluded: capacity utilisation has no 2% analogue.
     z = {
         # Growth components
         "USALOLITONOSTSAM": cli_z,
@@ -224,12 +274,28 @@ def run_etl():
         "INDPRO":           ewm_z_score(indpro_yoy),
         "UNRATE_INV":       ewm_z_score(-unrate_diff),
         # Inflation components — all anchored to 2% target
-        "T5YIE":            ewm_z_score(combined["T5YIE"] - FED_TARGET),
-        "CPI_YOY":          ewm_z_score(cpi_yoy - FED_TARGET),
-        "PPI_YOY":          ewm_z_score(ppi_yoy - FED_TARGET),
-        "CPI_MOM_ANN":      ewm_z_score(cpi_mom_ann - FED_TARGET),
+        "T5YIE":            target_anchored_z(combined["T5YIE"], FED_TARGET),
+        "PCE_YOY":          target_anchored_z(pce_yoy, FED_TARGET),
+        "PPI_YOY":          target_anchored_z(ppi_yoy, FED_TARGET),
+        "PCE_MOM_ANN":      target_anchored_z(pce_mom_ann, FED_TARGET),
         "TCU":              ewm_z_score(combined["TCU"]),
     }
+
+    # --- Warm-up gate ---
+    # ewm(min_periods=12) yields no std until 12 observations exist, and the YoY signals
+    # burn a further 12 months. Both z helpers end in .fillna(0), which turns that silence
+    # into a confident "exactly at trend" — the origin of the flat-line rows at the start
+    # of the chart. Publish only from the first month every component is genuinely defined.
+    def first_defined(series: pd.Series) -> pd.Timestamp | None:
+        return series.ewm(span=24, min_periods=12, ignore_na=True).std().first_valid_index()
+
+    warmup_inputs = [cli_deviation, indpro_yoy, icsa_yoy, unrate_diff,
+                     pce_yoy, ppi_yoy, pce_mom_ann, combined["T5YIE"], combined["TCU"]]
+    starts = [d for d in (first_defined(s) for s in warmup_inputs) if d is not None]
+    first_publishable = max(starts) if starts else None
+    if first_publishable is not None:
+        print(f"  warm-up complete at {first_publishable.date()} — "
+              f"earlier months will not be written")
 
     # --- Composite scores ---
     growth_z = sum(z[k] * w for k, w in GROWTH_WEIGHTS.items())
@@ -246,38 +312,37 @@ def run_etl():
     # this prevents new FRED releases from retroactively shifting prior months
     # via EWM recalculation (the root cause of Stagflation→Overheat flips in the UI).
     # Raw indicator values are always updated to capture FRED revisions.
-    upsert_sql = """
+    #
+    # backfill=True lifts the freeze and rewrites every month. Reserved for methodology
+    # changes, where the stored history was produced by superseded maths and leaving it
+    # in place would mean the chart splices two incompatible definitions together.
+    if backfill:
+        freeze = "EXCLUDED.{col}"
+    else:
+        freeze = (
+            "CASE WHEN date_trunc('month', investment_clock_data.biz_date) "
+            ">= date_trunc('month', CURRENT_DATE) "
+            "THEN EXCLUDED.{col} ELSE investment_clock_data.{col} END"
+        )
+
+    upsert_sql = f"""
         INSERT INTO investment_clock_data (
             biz_date,
             growth_z_score, inflation_z_score,
             data_phase, clock_angle,
             gdp_value, cpi_value, indpro_value, tcu_value, unrate_value,
             cli_value, icsa_value, cpi_yoy, cpi_mom_ann,
-            t5yie_value, ppi_yoy
+            t5yie_value, ppi_yoy,
+            pce_value, pce_yoy, pce_mom_ann
         ) VALUES (
-            %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+            %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+            %s, %s, %s
         )
         ON CONFLICT (biz_date) DO UPDATE SET
-            growth_z_score    = CASE
-                WHEN date_trunc('month', investment_clock_data.biz_date) >= date_trunc('month', CURRENT_DATE)
-                THEN EXCLUDED.growth_z_score
-                ELSE investment_clock_data.growth_z_score
-            END,
-            inflation_z_score = CASE
-                WHEN date_trunc('month', investment_clock_data.biz_date) >= date_trunc('month', CURRENT_DATE)
-                THEN EXCLUDED.inflation_z_score
-                ELSE investment_clock_data.inflation_z_score
-            END,
-            data_phase        = CASE
-                WHEN date_trunc('month', investment_clock_data.biz_date) >= date_trunc('month', CURRENT_DATE)
-                THEN EXCLUDED.data_phase
-                ELSE investment_clock_data.data_phase
-            END,
-            clock_angle       = CASE
-                WHEN date_trunc('month', investment_clock_data.biz_date) >= date_trunc('month', CURRENT_DATE)
-                THEN EXCLUDED.clock_angle
-                ELSE investment_clock_data.clock_angle
-            END,
+            growth_z_score    = {freeze.format(col='growth_z_score')},
+            inflation_z_score = {freeze.format(col='inflation_z_score')},
+            data_phase        = {freeze.format(col='data_phase')},
+            clock_angle       = {freeze.format(col='clock_angle')},
             gdp_value         = EXCLUDED.gdp_value,
             cpi_value         = EXCLUDED.cpi_value,
             indpro_value      = EXCLUDED.indpro_value,
@@ -288,13 +353,18 @@ def run_etl():
             cpi_yoy           = EXCLUDED.cpi_yoy,
             cpi_mom_ann       = EXCLUDED.cpi_mom_ann,
             t5yie_value       = EXCLUDED.t5yie_value,
-            ppi_yoy           = EXCLUDED.ppi_yoy
+            ppi_yoy           = EXCLUDED.ppi_yoy,
+            pce_value         = EXCLUDED.pce_value,
+            pce_yoy           = EXCLUDED.pce_yoy,
+            pce_mom_ann       = EXCLUDED.pce_mom_ann
     """
 
     rows_upserted = 0
     common_index = growth_z.dropna().index.intersection(inflation_z.dropna().index)
 
     for date in common_index:
+        if first_publishable is not None and date < first_publishable:
+            continue  # still inside the EWM/YoY warm-up — z would be a fillna(0) artefact
         g = float(growth_z.get(date, float("nan")))
         i = float(inflation_z.get(date, float("nan")))
         if math.isnan(g) or math.isnan(i):
@@ -320,6 +390,9 @@ def run_etl():
             safe_float(cpi_mom_ann, date),
             safe_float(combined.get("T5YIE", pd.Series(dtype=float)), date),
             safe_float(ppi_yoy, date),
+            safe_float(combined.get("PCEPILFE", pd.Series(dtype=float)), date),
+            safe_float(pce_yoy, date),
+            safe_float(pce_mom_ann, date),
         ))
         rows_upserted += 1
 
@@ -340,6 +413,8 @@ def run_etl():
     cpi_yoy_val = safe_float(cpi_yoy, latest_date)
     cpi_mom_val = safe_float(cpi_mom_ann, latest_date)
     ppi_yoy_val = safe_float(ppi_yoy, latest_date)
+    pce_yoy_val = safe_float(pce_yoy, latest_date)
+    pce_mom_val = safe_float(pce_mom_ann, latest_date)
 
     print(f"\n{Fore.GREEN}Done! Upserted {rows_upserted} rows.{Style.RESET_ALL}")
     print(f"\nLatest reading ({latest_date.date()}):")
@@ -350,10 +425,20 @@ def run_etl():
     print(f"\n  OECD CLI:          {cli_val:.2f}" if cli_val else "  OECD CLI:          N/A")
     print(f"  Jobless Claims:    {icsa_val:.0f}" if icsa_val else "  Jobless Claims:    N/A")
     print(f"  5Y Breakeven:      {t5yie_val:.2f}%" if t5yie_val else "  5Y Breakeven:      N/A")
-    print(f"  CPI YoY:           {cpi_yoy_val:.2f}%" if cpi_yoy_val else "  CPI YoY:           N/A")
+    print(f"  Core PCE YoY:      {pce_yoy_val:.2f}%  <- drives composite"
+          if pce_yoy_val else "  Core PCE YoY:      N/A")
+    print(f"  Core PCE MoM Ann:  {pce_mom_val:.2f}%" if pce_mom_val else "  Core PCE MoM Ann:  N/A")
+    print(f"  Core CPI YoY:      {cpi_yoy_val:.2f}%  (display only)"
+          if cpi_yoy_val else "  Core CPI YoY:      N/A")
     print(f"  PPI YoY:           {ppi_yoy_val:.2f}%" if ppi_yoy_val else "  PPI YoY:           N/A")
-    print(f"  CPI MoM Ann:       {cpi_mom_val:.2f}%" if cpi_mom_val else "  CPI MoM Ann:       N/A")
+    print(f"  Core CPI MoM Ann:  {cpi_mom_val:.2f}%" if cpi_mom_val else "  Core CPI MoM Ann:  N/A")
 
 
 if __name__ == "__main__":
-    run_etl()
+    import argparse
+    parser = argparse.ArgumentParser(description="Investment Clock ETL")
+    parser.add_argument(
+        "--backfill", action="store_true",
+        help="Recompute and overwrite Z-scores/phase for ALL months, lifting the "
+             "closed-month freeze. Use only after a methodology change.")
+    run_etl(backfill=parser.parse_args().backfill)
