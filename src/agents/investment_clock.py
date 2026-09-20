@@ -43,7 +43,7 @@ load_dotenv()
 # FRED series to fetch
 # ---------------------------------------------------------------------------
 FRED_SERIES_IDS = [
-    "USALOLITONOSTSAM",  # OECD CLI (monthly)
+    "USALOLITOAASTSAM",  # OECD CLI, amplitude adjusted (monthly)
     "ICSA",              # Initial Jobless Claims (weekly)
     "INDPRO",            # Industrial Production Index (monthly)
     "UNRATE",            # Unemployment Rate (monthly)
@@ -59,7 +59,7 @@ FRED_SERIES_IDS = [
 # Composite weights
 # ---------------------------------------------------------------------------
 GROWTH_WEIGHTS = {
-    "USALOLITONOSTSAM": 0.50,   # Leading (3-6m forward)
+    "USALOLITOAASTSAM": 0.50,   # Leading (3-6m forward)
     "ICSA_INV":         0.15,   # Leading labor (inverted)
     "INDPRO":           0.20,   # Coincident output
     "UNRATE_INV":       0.15,   # Lagging confirmation (inverted)
@@ -232,6 +232,46 @@ def safe_float(series: pd.Series, idx) -> float | None:
         return None
 
 
+# A series that stops publishing does not announce itself. The frame is forward-filled,
+# so a dead input keeps supplying its last value indefinitely and every downstream number
+# still looks well-formed. FRED retired USALOLITONOSTSAM (OECD CLI) after 2024-01 and the
+# ETL carried 99.85 forward for 32 months at 50% of the growth weight — worse, its EWM
+# Z-score decayed from +0.43 to +0.10 as the mean crept toward the frozen level, so the
+# growth composite drifted down by ~0.16 for reasons with no economic content at all.
+# These thresholds turn that silence into noise.
+STALE_WARN_DAYS = 100    # a normal release lag; monthly series land 2-8 weeks late
+STALE_FAIL_DAYS = 400    # beyond a year is a discontinued series, not a late print
+
+
+def check_series_freshness(raw: dict, today: datetime.date | None = None) -> None:
+    """Warn on late FRED series and refuse to run on ones that look discontinued."""
+    today = today or datetime.date.today()
+    stale, dead = [], []
+    for sid, series in raw.items():
+        if series.empty:
+            dead.append((sid, None, None))
+            continue
+        last = series.index[-1].date()
+        age = (today - last).days
+        if age > STALE_FAIL_DAYS:
+            dead.append((sid, last, age))
+        elif age > STALE_WARN_DAYS:
+            stale.append((sid, last, age))
+
+    for sid, last, age in stale:
+        print(f"{Fore.YELLOW}  WARNING: {sid} last published {last} ({age}d ago) — "
+              f"its value is being carried forward.{Style.RESET_ALL}")
+
+    if dead:
+        detail = ", ".join(
+            f"{sid} (last {last}, {age}d ago)" if last else f"{sid} (no observations)"
+            for sid, last, age in dead)
+        raise RuntimeError(
+            f"FRED series appear discontinued: {detail}. Forward-filling these would "
+            f"silently corrupt the composite — find a replacement series or drop the "
+            f"input and reweight before running again.")
+
+
 def run_etl(backfill: bool = False):
     """
     Main ETL function. Fetches FRED data, computes EWM Z-scores,
@@ -254,6 +294,8 @@ def run_etl(backfill: bool = False):
     for sid in FRED_SERIES_IDS:
         print(f"  Fetching {sid}...")
         raw[sid] = fetch_fred_series(sid, start_date, api_key)
+
+    check_series_freshness(raw)
 
     # Resample to monthly (end of month)
     print(f"{Fore.CYAN}Resampling to monthly...{Style.RESET_ALL}")
@@ -293,7 +335,7 @@ def run_etl(backfill: bool = False):
     # GROWTH: CLI is pre-normalized by OECD (100 = long-run trend).
     # Use ewm_z_score on (CLI-100) for consistency with all other components —
     # avoids full-sample std rescaling all historical values each run.
-    cli_deviation = combined["USALOLITONOSTSAM"] - 100
+    cli_deviation = combined["USALOLITOAASTSAM"] - 100
     cli_z = ewm_z_score(cli_deviation)
 
     # GROWTH components stay relative (vs own trend) — "above/below trend" is the
@@ -303,7 +345,7 @@ def run_etl(backfill: bool = False):
     # into a drifting mean. TCU is excluded: capacity utilisation has no 2% analogue.
     z = {
         # Growth components
-        "USALOLITONOSTSAM": cli_z,
+        "USALOLITOAASTSAM": cli_z,
         "ICSA_INV":         ewm_z_score(-icsa_yoy),
         "INDPRO":           ewm_z_score(indpro_yoy),
         "UNRATE_INV":       ewm_z_score(-unrate_diff),
@@ -418,7 +460,7 @@ def run_etl(backfill: bool = False):
             safe_float(combined.get("INDPRO", pd.Series(dtype=float)), date),
             safe_float(combined.get("TCU", pd.Series(dtype=float)), date),
             safe_float(combined.get("UNRATE", pd.Series(dtype=float)), date),
-            safe_float(combined.get("USALOLITONOSTSAM", pd.Series(dtype=float)), date),
+            safe_float(combined.get("USALOLITOAASTSAM", pd.Series(dtype=float)), date),
             safe_float(combined.get("ICSA", pd.Series(dtype=float)), date),
             safe_float(cpi_yoy, date),
             safe_float(cpi_mom_ann, date),
@@ -441,7 +483,7 @@ def run_etl(backfill: bool = False):
     phase_latest = PHASE_MAP[(g_latest > 0, i_latest > 0)]
     angle_latest = clock_angle_from_z_scores(g_latest, i_latest)
 
-    cli_val     = safe_float(combined["USALOLITONOSTSAM"], latest_date)
+    cli_val     = safe_float(combined["USALOLITOAASTSAM"], latest_date)
     icsa_val    = safe_float(combined["ICSA"], latest_date)
     t5yie_val   = safe_float(combined["T5YIE"], latest_date)
     cpi_yoy_val = safe_float(cpi_yoy, latest_date)

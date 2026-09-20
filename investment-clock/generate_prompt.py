@@ -159,7 +159,7 @@ As of {biz_date}, the US economy shows the following EWM Z-score cycle signals:
     is scaled by each series' 10-year dispersion, so a quiet stretch does not inflate it.
 
 Growth Indicators (latest available):
-  OECD CLI (USALOLITONOSTSAM):     {cli}  (>100 = expansion, <100 = contraction; 50% weight)
+  OECD CLI (USALOLITOAASTSAM):     {cli}  (>100 = expansion, <100 = contraction; 50% weight)
   Initial Jobless Claims (ICSA):   {icsa}k/week  (inverted; rising = weakening labor; 15% weight)
   Industrial Production (INDPRO):  {indpro}  (coincident output; 20% weight)
   Unemployment Rate (UNRATE):      {unrate}%  (inverted; 15% weight)
