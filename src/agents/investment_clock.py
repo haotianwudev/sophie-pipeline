@@ -9,8 +9,9 @@ Methodology:
   Growth composite  = 50% OECD CLI + 20% INDPRO + 15% inv. ICSA + 15% inv. UNRATE
   Inflation composite = 30% 5Y Breakeven (vs 2%) + 25% Core PCE YoY (vs 2%)
                       + 20% PPI Final Demand YoY (vs 2%) + 15% Core PCE MoM ann (vs 2%) + 10% TCU
-  Normalization: EWM Z-score (span=24). Inflation components (except TCU) use
-  target_anchored_z against the Fed's 2% goal; growth components stay relative to trend.
+  Normalization: growth uses a mean-relative EWM Z-score (span=24). Inflation components
+  (except TCU) use target_anchored_z — centred on the Fed's 2% goal, scaled by a 10-year
+  EWM std so a temporarily quiet series is not scored as an extreme deviation.
 
   Core PCE (PCEPILFE), not core CPI, drives the inflation composite: the FOMC's 2%
   target is defined on PCE, and core CPI carries a structural +0.3pp wedge over it
@@ -74,6 +75,35 @@ INFLATION_WEIGHTS = {
 
 FED_TARGET = 2.0  # Fed's 2% inflation target — the neutral baseline
 
+# PPI Final Demand sits structurally above consumer inflation — producer prices carry
+# more commodity weight and none of the services-heavy shelter component. Measured over
+# calm stretches (2010-2019: +0.12pp; 2010-2019 plus 2024-present: +0.17pp) the wedge
+# over core PCE is small, so "PPI consistent with a 2% consumer target" is ~2.15%.
+# Anchoring PPI at 2.0 added a permanent hawkish bias; anchoring at its raw full-sample
+# mean (2.71%) would instead bake the 2021-22 spike into the definition of neutral.
+PPI_TARGET = 2.15
+
+# Where each inflation input is centred. The three consumer/expectation series have
+# long-run means of 1.97 / 2.05 / 2.08, so 2% is genuinely their neutral.
+INFLATION_TARGETS = {
+    "T5YIE":       FED_TARGET,
+    "PCE_YOY":     FED_TARGET,
+    "PCE_MOM_ANN": FED_TARGET,
+    "PPI_YOY":     PPI_TARGET,
+}
+
+# Span of the dispersion estimate used by target_anchored_z — deliberately much longer
+# than the 24-month span used for growth's mean-relative Z-scores.
+#
+# For a target-anchored score the denominator should describe how much a series
+# inherently varies, not how calm it has happened to be lately. At span=24 the 2026
+# breakeven std collapsed to 0.158 against 0.561 over its full history, so a mere 0.38pp
+# gap above target scored +2.40 — well-anchored expectations registering as an extreme
+# inflation signal, and on the heaviest-weighted input. A decade-long span keeps the
+# estimate causal (no full-sample lookahead, no retroactive rescaling) while spanning
+# enough regimes that a quiet couple of years cannot shrink it.
+SCALE_SPAN = 120
+
 # FRED lookback. Needs to comfortably exceed the table's earliest row (2014-04), because
 # the first ~24 months are consumed by the 12-month YoY lag plus the ewm min_periods=12
 # warm-up and produce no composite. Too short a window silently leaves early rows holding
@@ -131,12 +161,16 @@ def ewm_z_score(series: pd.Series, span: int = 24, min_periods: int = 12) -> pd.
 
 
 def target_anchored_z(series: pd.Series, target: float,
-                      span: int = 24, min_periods: int = 12) -> pd.Series:
+                      span: int = SCALE_SPAN, min_periods: int = 12) -> pd.Series:
     """Z-score measured against a FIXED target rather than the series' own moving mean.
 
     Only the scale (EWM std) is rolling; the centre is pinned to `target`. This is the
     difference between "inflation vs its own recent average" and "inflation vs the Fed's
     2% goal" — the latter is what the Investment Clock quadrants actually mean.
+
+    `span` defaults to SCALE_SPAN (10 years) rather than the 24 months used for
+    mean-relative growth scores — see that constant for why a short scale window
+    over-penalises a series that has simply been quiet.
 
     Do NOT substitute ewm_z_score(series - target): subtracting a constant before an
     EWM Z-score is algebraically a no-op, because ewm_mean(x - c) == ewm_mean(x) - c and
@@ -274,10 +308,10 @@ def run_etl(backfill: bool = False):
         "INDPRO":           ewm_z_score(indpro_yoy),
         "UNRATE_INV":       ewm_z_score(-unrate_diff),
         # Inflation components — all anchored to 2% target
-        "T5YIE":            target_anchored_z(combined["T5YIE"], FED_TARGET),
-        "PCE_YOY":          target_anchored_z(pce_yoy, FED_TARGET),
-        "PPI_YOY":          target_anchored_z(ppi_yoy, FED_TARGET),
-        "PCE_MOM_ANN":      target_anchored_z(pce_mom_ann, FED_TARGET),
+        "T5YIE":            target_anchored_z(combined["T5YIE"], INFLATION_TARGETS["T5YIE"]),
+        "PCE_YOY":          target_anchored_z(pce_yoy,      INFLATION_TARGETS["PCE_YOY"]),
+        "PPI_YOY":          target_anchored_z(ppi_yoy,      INFLATION_TARGETS["PPI_YOY"]),
+        "PCE_MOM_ANN":      target_anchored_z(pce_mom_ann,  INFLATION_TARGETS["PCE_MOM_ANN"]),
         "TCU":              ewm_z_score(combined["TCU"]),
     }
 

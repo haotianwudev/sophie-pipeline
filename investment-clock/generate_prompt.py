@@ -153,8 +153,10 @@ As of {biz_date}, the US economy shows the following EWM Z-score cycle signals:
     [CLI 50% + INDPRO 20% + inv. Jobless Claims 15% + inv. UNRATE 15%]
   Composite Inflation Z-score: {inflation_z:+.3f}  ({inflation_dir})
     [5Y Breakeven 30% + Core PCE YoY vs 2% 25% + PPI YoY 20% + Core PCE MoM Ann vs 2% 15% + TCU 10%]
-    Inflation components are scored against the Fed's 2% target, not their own moving
-    average, so a persistently above-target print stays positive rather than normalising.
+    Inflation components are scored against the Fed's 2% target (PPI against 2.15%, its
+    structural level when consumer inflation is at target), not their own moving average,
+    so a persistently above-target print stays positive rather than normalising. The gap
+    is scaled by each series' 10-year dispersion, so a quiet stretch does not inflate it.
 
 Growth Indicators (latest available):
   OECD CLI (USALOLITONOSTSAM):     {cli}  (>100 = expansion, <100 = contraction; 50% weight)
