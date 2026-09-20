@@ -1,0 +1,71 @@
+{
+  "final_phase": "Overheat",
+  "phase_confidence": 78,
+  "phase_direction": "clockwise",
+  "reasoning": "• Growth Z (+0.79) and inflation Z (+0.88) confirm above-trend output and above-target price pressures.\n• Clockwise progression places the economy in Overheat, advancing toward the late-cycle Stagflation boundary.\n• Resilient 5.1% GDPNow growth and 3.34% Core PCE prompted the Fed's first rate hike to 3.75%–4.00%.\n• Decisive rotation out of Recovery cements cyclical transition as stubborn wholesale PPI reaches 5.44%.",
+  "outlook": "• Baseline (55%): Economy remains in late Overheat with one additional Fed hike expected.\n• Stagflation risk (35%): Sustained $100+ crude oil and 5.00%+ Treasury yields choke economic growth.\n• Watchlist: November FOMC rate decision and September PPI/CPI releases for margin compression.",
+  "key_indicators": [
+    "Core PCE 3.34% YoY — Remains 134 bps above target, anchoring positive inflation Z-score.",
+    "PPI Final Demand 5.44% YoY — Surging wholesale pipeline inflation signals persistent input cost pressures.",
+    "Atlanta Fed GDPNow 5.1% SAAR — Robust consumer spending confirms strong above-trend economic expansion.",
+    "Initial Jobless Claims 201k — Multi-month low confirms exceptional labor retention and tight capacity.",
+    "10-Year Treasury Yield 5.01% — Expanding term premium reflects stubborn inflation and tighter monetary policy."
+  ],
+  "risks": [
+    "Oil price spike — Brent topping $120/bbl accelerates rotation into Stagflation.",
+    "Fed overtightening — 5.00%+ Treasury yields trigger credit stress and capital spending cuts.",
+    "Tariff frictions — Section 122 duties raise input costs without generating real output."
+  ],
+  "best_asset": "Commodities",
+  "recommended_sectors": [
+    "IYE (Energy)",
+    "IYJ (Industrials)",
+    "IYM (Materials)"
+  ],
+  "gemini_research_summary": "Surging 5.1% GDPNow growth alongside 3.34% Core PCE and $100+ oil prompted a 25 bps Fed rate hike, cementing the rotation into Overheat.",
+  "phase_probabilities": [
+    {
+      "phase": "Overheat",
+      "probability": 55
+    },
+    {
+      "phase": "Stagflation",
+      "probability": 35
+    },
+    {
+      "phase": "Recovery",
+      "probability": 10
+    }
+  ],
+  "monitoring_triggers": [
+    {
+      "indicator": "Brent Crude Oil",
+      "threshold": "> $105/bbl",
+      "meaning": "Heightens stagflation risk by taxing consumer discretionary spending"
+    },
+    {
+      "indicator": "Initial Jobless Claims",
+      "threshold": "> 230k/week",
+      "meaning": "Signals labor market deterioration and growth deceleration"
+    },
+    {
+      "indicator": "10-Year Treasury Yield",
+      "threshold": "> 5.25%",
+      "meaning": "Intensifies corporate debt-servicing stress and credit tightening"
+    }
+  ],
+  "sector_rationale": [
+    {
+      "etf": "IYE",
+      "rationale": "Direct beneficiary of $100+ crude oil, elevated refining margins, and disciplined capital return programs."
+    },
+    {
+      "etf": "IYJ",
+      "rationale": "Supported by domestic manufacturing investment, infrastructure modernization, and expanding defense order books."
+    },
+    {
+      "etf": "IYM",
+      "rationale": "Directly captures raw material price increases with upstream pricing power to pass through wholesale inflation."
+    }
+  ]
+}
