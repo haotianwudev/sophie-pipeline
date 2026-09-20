@@ -41,7 +41,8 @@ def refresh_prices() -> None:
     in the uploader's full import surface (company facts, news, insider trades, line items) for
     a job that fetches two index series. In-process keeps local and cloud on one code path.
     """
-    end_date = datetime.now().strftime("%Y-%m-%d")
+    # yfinance's `end` is exclusive, so +1 day is needed to include today's close.
+    end_date = (datetime.now() + timedelta(days=1)).strftime("%Y-%m-%d")
     start_date = (datetime.now() - timedelta(days=PRICE_LOOKBACK_DAYS)).strftime("%Y-%m-%d")
     print(f"Refreshing SPX/VIX prices ({start_date} -> {end_date})...")
 

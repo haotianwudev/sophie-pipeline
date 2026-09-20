@@ -182,6 +182,11 @@ def build_signals() -> pd.DataFrame:
     if missing:
         raise SystemExit(f"`prices` is missing required tickers: {sorted(missing)}")
 
+    # Keep only sessions where both series printed. Yahoo serves a VIX bar on some US holidays
+    # (e.g. Labor Day) with no SPX bar; that single NaN in the return series poisons every
+    # rolling(20) window it touches, blanking vrp/vrp_z -- and thus the whole row -- for the next
+    # 20 sessions.
+    wide = wide.dropna(subset=["SPX", "VIX"])
     spx, vix = wide["SPX"], wide["VIX"]
 
     log_ret = np.log(spx / spx.shift(1))
