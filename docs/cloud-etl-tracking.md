@@ -58,3 +58,23 @@ gcloud logging read "resource.type=cloud_run_job AND resource.labels.job_name=sp
 ## 4. Gap Detection & Alerts
 
 Each snapshot run automatically verifies that the previous NYSE session exists in the database. If a session was missed, a `GAP: ` warning is logged.
+
+---
+
+## 5. Is the local archive keeping up?
+
+The cloud archive is only half of what backtests depend on: they read a **local copy** (`data/spx_chain_unified`),
+which nothing updates automatically. Compare the newest day on each side:
+
+```powershell
+gsutil ls gs://sophie-option-archive/spx/chain/year=2026/month=09/
+Get-ChildItem F:\workspace\sophie-pipeline\data\spx_chain_unified\year=2026\month=09 | Sort-Object Name | Select-Object -Last 3
+```
+
+- Bucket newer than local → a **sync gap**, recoverable: pull it (manual procedure and proposed automation in
+  `docs/spx-chain-local-sync.md`).
+- A session present in neither → a **capture gap**, permanent: look at that date in Steps 2–3 of the tracker.
+- The research viewer's *Data availability* page shows the local side (sessions behind, gaps, per-day contents).
+
+`gsutil` on the workstation lives in `C:\Program Files (x86)\Google\Cloud SDK\google-cloud-sdk\bin` and may not be on
+`PATH` inside a scheduled or non-interactive shell.

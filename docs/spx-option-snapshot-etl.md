@@ -453,12 +453,14 @@ psql "$DATABASE_URL" -f sql/create_spx_option_snapshot_tables.sql
 | No intraday samples | Cannot reconstruct intraday skew dynamics, only session-to-session |
 | ±25% band on the Postgres slice | Deep-wing per-strike history exists only in the Parquet archive |
 | Gamma flip not stored | Recomputable from the slice, but not queryable directly |
+| The local copy is not fed automatically | The full-chain GCS archive is mirrored to the local unified archive (the copy backtests read) by a manual pull-and-reshape; nothing schedules it, so the local copy silently ages. On 2026-09-20 it was six sessions behind while every one of those sessions was safely in the bucket. Design: `docs/spx-chain-local-sync.md` |
 | Backfill is impossible **from this source** | Cboe's CDN publishes current state only, with no history — so a gap cannot be repaired from the feed this ETL uses, which is the whole reason for the cloud schedule. It is *not* true of the data itself: a vendor that recorded OPRA at the time (ThetaData, OptionsDX, and similar) can still serve the missing sessions. See `.claude/skills/spx-option-backfill/`. Treat a gap as expensive, not irrecoverable |
 
 ---
 
 ## 10. Related
 
+- `docs/spx-chain-local-sync.md` — keeping the local unified archive in sync with this archive (design; not built)
 - `docs/cloud-etl-tracking.md` — operational tracking and status verification guide
 - `.agents/skills/sophie-etl-tracker/SKILL.md` — automated health check & tracking skill
 - `docs/../sql/create_spx_option_snapshot_tables.sql` — schema with inline rationale

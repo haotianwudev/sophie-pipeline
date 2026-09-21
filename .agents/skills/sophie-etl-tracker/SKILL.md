@@ -90,3 +90,21 @@ Synthesize the findings into a clear, structured operational report:
 3. **Trigger Status**: Scheduler state and next expected trigger window.
 4. **Archive Status**: Confirmed GCS parquet archive path and size.
 5. **Action Items / Diagnostics**: Any failed jobs, missing sessions, or maintenance needed.
+
+---
+
+## Step 6: Is the local archive keeping up?
+
+Steps 1-5 check the cloud side. Backtests read a **local copy** of the GCS archive that nothing updates
+automatically, so also compare the newest day on each side:
+
+```powershell
+gsutil ls gs://sophie-option-archive/spx/chain/year=2026/month=09/
+Get-ChildItem F:\workspace\sophie-pipeline\data\spx_chain_unified\year=2026\month=09 | Sort-Object Name | Select-Object -Last 3
+```
+
+- Bucket newer than local → **sync gap**, recoverable. Follow `docs/spx-chain-local-sync.md`.
+- A session in neither → **capture gap**, permanent. Look at that date's execution and logs (Steps 2-3).
+- The research viewer's *Data availability* page shows the local side: sessions behind, gaps, per-day contents.
+- `gsutil` is at `C:\Program Files (x86)\Google\Cloud SDK\google-cloud-sdk\bin`; it may not be on `PATH` in a
+  non-interactive shell.
