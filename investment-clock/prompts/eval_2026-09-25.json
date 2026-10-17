@@ -1,0 +1,71 @@
+{
+  "final_phase": "Overheat",
+  "phase_confidence": 80,
+  "phase_direction": "clockwise",
+  "reasoning": "As of September 25, 2026, the U.S. economy is firmly anchored in the Overheat phase of the Merrill Lynch Investment Clock at a clock hand position of 48.0° (centered in Quadrant I). The macroeconomic coordinates are established by a Composite Growth Z-score of +0.786 (above-trend expansion) and a Composite Inflation Z-score of +0.873 (above-target price pressure). Real economic activity is remarkably resilient: the Atlanta Fed's GDPNow model is tracking Q3 2026 real output growth at 5.0% SAAR, initial jobless claims dropped to 197,000 for the week ending September 19 with a 4-week average of 202,250, and the S&P Global Flash US Manufacturing PMI surged to 57.0—its highest reading since May 2022.\n\nConcurrently, persistent upstream and core price pressures confirm an entrenched inflationary environment. While the 5-year TIPS breakeven sits at 2.37%, Core PCE YoY is running at 3.34% (134 basis points above the Fed's 2.0% mandate), PPI Final Demand YoY has accelerated to 5.44%, and annualized short-term momentum gauges (Core CPI MoM at 3.53% and Core PCE MoM at 2.99%) show no sign of near-term deceleration. With Brent crude maintaining elevated levels near $104/bbl amidst Persian Gulf tensions, wholesale price pressures continue to filter into corporate cost structures.\n\nFollowing the Federal Open Market Committee's 25 bps rate increase to 3.75%–4.00% on September 16, Chair Kevin Warsh's data-dependent, anti-forward-guidance stance has been met with a bond market repricing that drove the benchmark 10-year Treasury yield to a cycle high of 5.18%. This combination of robust above-potential growth and sticky inflation in the face of rising policy rates is the textbook hallmark of late-cycle Overheat, warranting high confidence (80%) in the phase determination.",
+  "outlook": "Over the next 3 to 6 months (October 2026 through March 2027), the baseline expectation (60% probability) is that the economy will remain in the Overheat regime, advancing clockwise through Quadrant I as the Fed likely delivers one additional 25 bps hike to a terminal rate of 4.00%–4.25%. Commodities and cyclical value sectors (Energy, Industrials, Materials) will continue to lead market performance. The primary downside risk (30% probability) is an accelerated clockwise transition into Stagflation, precipitated by crude oil sustaining above $105–$120/bbl and 10-year Treasury yields pushing toward 5.50%, which would sap consumer discretionary purchasing power and force corporate capex retrenchment. Immediate catalysts to monitor include the BEA's August Personal Income & Outlays release on September 30, the September ISM PMI on October 1, and the November 4–5 FOMC policy meeting.",
+  "key_indicators": [
+    "Clock Position 48.0° in Quadrant I (Growth Z +0.786, Inflation Z +0.873) confirming a textbook Overheat regime.",
+    "Atlanta Fed GDPNow tracking 5.0% SAAR for Q3 2026, reinforced by S&P Global Flash Manufacturing PMI jumping to 57.0.",
+    "Initial Jobless Claims falling to 197,000/week (4-week avg 202,250), confirming exceptional labor retention and full employment.",
+    "Core PCE YoY at 3.34% and PPI Final Demand YoY at 5.44%, demonstrating persistent wholesale pass-through to consumer prices.",
+    "10-Year Treasury Yield reaching 5.18% following the Fed's 25 bps hike to 3.75%–4.00%, tightening broader financial conditions."
+  ],
+  "risks": [
+    "Middle East escalation driving Brent crude above $120/bbl, converting pipeline inflation into a direct growth drag and accelerating transition into Stagflation.",
+    "Monetary overtightening and bond market dislocation, where 10-year yields exceeding 5.25%–5.50% trigger liquidity stress in corporate credit and commercial real estate.",
+    "Persistent Section 122 tariffs and trade friction continuing to impose non-productive supply-side input costs on manufacturing supply chains."
+  ],
+  "best_asset": "Commodities",
+  "recommended_sectors": [
+    "Energy",
+    "Industrials",
+    "Materials"
+  ],
+  "gemini_research_summary": "Deep research validates the U.S. economy's position in Overheat at 48.0°, supported by 5.0% GDPNow growth, 197k initial jobless claims, and a 57.0 Manufacturing PMI. Persistent 3.34% Core PCE, 5.44% PPI wholesale inflation, and $104/bbl Brent crude prompted the Fed's rate hike to 3.75%–4.00%, driving 10-year yields to 5.18% and reinforcing Commodities as the top asset class.",
+  "phase_probabilities": [
+    {
+      "phase": "Overheat",
+      "probability": 60
+    },
+    {
+      "phase": "Stagflation",
+      "probability": 30
+    },
+    {
+      "phase": "Recovery",
+      "probability": 10
+    }
+  ],
+  "monitoring_triggers": [
+    {
+      "indicator": "Brent Crude Oil",
+      "threshold": "> $105/bbl",
+      "meaning": "Heightens stagflation risk by taxing consumer discretionary spending and elevating headline inflation"
+    },
+    {
+      "indicator": "Initial Jobless Claims",
+      "threshold": "> 230k/week",
+      "meaning": "Signals labor market deterioration and deceleration in consumer spending"
+    },
+    {
+      "indicator": "10-Year Treasury Yield",
+      "threshold": "> 5.25%",
+      "meaning": "Intensifies corporate debt-servicing stress and credit conditions tightening"
+    }
+  ],
+  "sector_rationale": [
+    {
+      "etf": "IYE (Energy)",
+      "rationale": "Direct beneficiary of elevated crude prices ($92–$104/bbl), strong refining crack spreads, and disciplined capital allocation programs."
+    },
+    {
+      "etf": "IYJ (Industrials)",
+      "rationale": "Driven by the domestic manufacturing rebound (57.0 Flash PMI), capital goods investment, and robust defense order backlogs."
+    },
+    {
+      "etf": "IYM (Materials)",
+      "rationale": "Captures raw material pricing power to pass through wholesale PPI inflation while benefiting from steady industrial consumption."
+    }
+  ]
+}
