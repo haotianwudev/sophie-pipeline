@@ -1,0 +1,71 @@
+{
+  "final_phase": "Overheat",
+  "phase_confidence": 85,
+  "phase_direction": "clockwise",
+  "reasoning": "As of October 23, 2026, the U.S. economy remains decisively anchored in the Overheat phase of the Merrill Lynch Investment Clock at a clock hand position of 47.4° (Quadrant I). Macroeconomic coordinates reflect an ongoing synchronized expansion with both indicators comfortably above neutral: the Composite Growth Z-score is at +0.876 (above-trend expansion) and the Composite Inflation Z-score is at +0.952 (above-target price pressures). Real output tracking remains resilient, with the Atlanta Fed's GDPNow model estimating Q3 2026 real output growth at 3.5% SAAR (as of October 20), initial jobless claims printing at an ultra-low 197,000/week alongside a 4.2% unemployment rate, industrial production holding firm at 103.95, and the OECD Composite Leading Indicator anchored at 101.00.\n\nConcurrently, price pressures remain sticky and elevated across both producer pipeline and consumer metrics. Wholesale pipeline inflation (PPI Final Demand YoY) remains high at 6.34%, Core CPI 1-month annualized momentum holds at 4.09% (YoY at 2.57%), the Fed's primary benchmark (Core PCE YoY) remains stuck at 3.01% with 1-month annualized momentum also at 3.01%, and 5-year TIPS breakevens ticked higher to 2.38%. Crucially, WTI crude oil continues to trade elevated in the $103–$117/bbl range amid escalating geopolitical tensions and tight physical inventories, imposing persistent energy and logistics surcharges throughout domestic supply chains.\n\nAhead of the October 27–28 FOMC meeting, the Federal Reserve under Chair Kevin Warsh is widely expected to pause and keep the federal funds rate at 3.75%–4.00%, though futures markets continue to price a ~65% probability of a final 25 bps hike to 4.00%–4.25% in December. Benchmark 10-year Treasury yields stabilized near 4.96%–5.00%, keeping financial conditions restrictive. This potent confluence of above-potential output, sticky wholesale pipeline inflation, $100+ oil, and restrictive monetary policy confirms an unambiguous Overheat regime with high confidence (85%).",
+  "outlook": "Over the next 3 to 6 months (October 2026 through April 2027), the baseline expectation (50% probability) is that the economy will remain in the Overheat regime, advancing clockwise through Quadrant I as the Fed holds rates in October before delivering a final 25 bps hike in December to reach 4.00%–4.25%. Commodities and pricing-power cyclicals (Energy, Industrials, Materials) will continue to lead market performance. The primary downside risk (40% probability) is an accelerated clockwise transition into Stagflation, catalyzed by sustained $100+ crude oil ($103–$117/bbl) and surging intermediate producer costs (PPI 6.34%), which would erode household purchasing power and squeeze corporate margins. Key near-term catalysts include the October 27–28 FOMC meeting statement, the upcoming October employment report, and the advance Q3 GDP release.",
+  "key_indicators": [
+    "Clock Position at 47.4° in Quadrant I (Growth Z +0.876, Inflation Z +0.952) confirming an unambiguous Overheat regime.",
+    "Atlanta Fed GDPNow tracking 3.5% SAAR for Q3 2026, supported by INDPRO at 103.95 and OECD CLI at 101.00.",
+    "Initial Jobless Claims printing at 197,000/week with UNRATE at 4.2%, confirming resilient worker retention and absence of broad layoffs.",
+    "PPI Final Demand YoY holding at 6.34% and Core CPI MoM annualized at 4.09%, with Core PCE stuck at 3.01% and 5Y breakeven at 2.38%.",
+    "WTI Crude Oil trading elevated between $103 and $117/bbl and 10-Year Treasury Yields consolidating near 4.96%–5.00%."
+  ],
+  "risks": [
+    "Sustained crude oil trading in the $103–$117/bbl range acting as a regressive energy tax, accelerating a transition into Stagflation.",
+    "Upstream wholesale pipeline inflation (PPI 6.34%) compressing corporate profit margins if consumer demand softens and pricing power wanes.",
+    "Resurgent bond market sell-offs pushing 10-year Treasury yields back above 5.25%–5.30%, tightening financial conditions and dampening corporate capex."
+  ],
+  "best_asset": "Commodities",
+  "recommended_sectors": [
+    "Energy",
+    "Industrials",
+    "Materials"
+  ],
+  "gemini_research_summary": "Deep research validates the U.S. economy's firm anchor in Overheat at 47.4°, powered by 3.5% GDPNow growth, 197k jobless claims, and industrial production at 103.95. A combination of wholesale PPI at 6.34%, Core CPI annualized momentum at 4.09%, and WTI crude trading between $103 and $117/bbl sustains acute price pressures, keeping the Fed's tightening bias toward 4.00%–4.25% intact and cementing Commodities as the premier asset class.",
+  "phase_probabilities": [
+    {
+      "phase": "Overheat",
+      "probability": 50
+    },
+    {
+      "phase": "Stagflation",
+      "probability": 40
+    },
+    {
+      "phase": "Recovery",
+      "probability": 10
+    }
+  ],
+  "monitoring_triggers": [
+    {
+      "indicator": "WTI/Brent Crude Oil",
+      "threshold": "> $100/bbl",
+      "meaning": "Elevates stagflation risk by imposing an energy tax on consumers and exacerbating cost-push inflation (currently active at $103–$117/bbl)"
+    },
+    {
+      "indicator": "Initial Jobless Claims",
+      "threshold": "> 225k/week",
+      "meaning": "Signals labor market degradation and decelerating consumer disposable income"
+    },
+    {
+      "indicator": "10-Year Treasury Yield",
+      "threshold": "> 5.25%",
+      "meaning": "Triggers severe financial conditions tightening, dampening corporate investment and debt refinancing"
+    }
+  ],
+  "sector_rationale": [
+    {
+      "etf": "IYE (Energy)",
+      "rationale": "Direct beneficiary of crude oil holding between $103 and $117/bbl, disciplined capex, and superior free cash flow generation."
+    },
+    {
+      "etf": "IYJ (Industrials)",
+      "rationale": "Driven by rising industrial production (103.95), factory utilization (76.9%), infrastructure modernization, and defense backlogs."
+    },
+    {
+      "etf": "IYM (Materials)",
+      "rationale": "High pricing power to pass through surging upstream wholesale inflation highlighted by the 6.34% PPI print."
+    }
+  ]
+}
