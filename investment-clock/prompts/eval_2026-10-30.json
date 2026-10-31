@@ -1,0 +1,71 @@
+{
+  "final_phase": "Overheat",
+  "phase_confidence": 88,
+  "phase_direction": "clockwise",
+  "reasoning": "As of October 30, 2026, the U.S. economy remains firmly entrenched in the Overheat phase of the Merrill Lynch Investment Clock, with the cycle hand advancing +3.3° clockwise over the past week from 47.4° to 50.7°—crossing the 45° midpoint of Quadrant I into late-stage Overheat. Both macroeconomic composites sit well above neutral: the Composite Growth Z-score stands at +0.877 (above-trend expansion) while the Composite Inflation Z-score surged from +0.952 to +1.071 (accelerating above-target inflation). On the real activity side, the BEA's October 29 Advance Estimate confirmed Q3 2026 real GDP accelerated to 3.4% SAAR (up from 2.2% in Q2 and beating consensus), the Atlanta Fed's initial Q4 2026 GDPNow forecast launched at 3.2% SAAR, initial jobless claims remain ultra-tight at 196k/week (194k latest weekly print) alongside a 4.2% unemployment rate, industrial production holds at 103.95, the OECD CLI sits at 101.00, and S&P Global's October US Flash Composite PMI registered a robust 57.6.\n\nSimultaneously, inflation shifted from sticky to actively re-accelerating across consumer, wholesale, and commodity channels. In the October 29 Personal Income and Outlays release, Core PCE YoY broke upward out of its three-month 3.0% plateau to 3.12% with 1-month annualized momentum jumping to 3.86%, while Headline PCE climbed to 3.6% YoY (+0.5% MoM). Upstream, PPI Final Demand YoY holds at a lofty 6.34%, Core CPI 1-month annualized momentum sits at 4.09% (Headline CPI at 3.7% YoY), ISM Services Prices Paid surged to 74.0%, and 5-year TIPS breakevens rose to 2.40%. Compounding pipeline pressures, crude oil rallied for a fourth consecutive month—with WTI settling at $104.12/bbl and expiring December Brent at $117.64/bbl on October 30—following a limpet mine attack on an oil tanker in the Strait of Hormuz and Houthi strikes targeting Saudi Aramco's Ras Tanura, Rabigh, and Abqaiq infrastructure.\n\nMonetary policy and cross-asset price action provide textbook confirmation of the Overheat regime. At its October 27–28 meeting, the FOMC under Chair Kevin Warsh voted 10–2 to hold the federal funds rate at 3.75%–4.00%, with Governor Lisa Cook and Cleveland Fed President Beth Hammack dissenting in favor of an immediate 25 bps hike; following Thursday's hot GDP and PCE prints, CME FedWatch odds of a December 9 hike to 4.00%–4.25% climbed to 71%–78%. With 10-year Treasury yields near 4.93% (positively sloped above 2-year yields at ~4.60%) and investors scrutinizing mega-cap AI capex cash burn, equity leadership rotated sharply out of Big Tech (Nasdaq -2.9% on October 30) and into cash-generative Energy and Industrial cyclicals, validating high conviction (88%) in Overheat.",
+  "outlook": "Over the next 3 to 6 months (November 2026 through April 2027), our plurality baseline (50% probability) expects the U.S. economy to remain in late-stage Overheat, supported by 3.2% Q4 GDPNow momentum, tight jobless claims (<200k), and healthy corporate earnings, even as the Federal Reserve delivers a widely anticipated 25 bps rate hike to 4.00%–4.25% on December 9. In this baseline, Commodities and real-economy value cyclicals (Energy, Industrials, Materials) continue to outperform duration-sensitive growth equities and government bonds. However, the probability of a clockwise transition past 90° into Stagflation has risen to 45% (up from 40% last week): September inflation-adjusted real PCE stalled at ~0.0% as higher prices absorbed nominal spending gains, the personal saving rate fell to a multi-year low of 3.8%, and Q3 private-sector ECI wage growth cooled to 3.1% YoY against 3.6%–3.7% headline consumer inflation. Key upcoming catalysts include the November 2–5 ISM Manufacturing and Services PMIs, the U.S. midterm elections, the November 6 October jobs report, and Strait of Hormuz maritime security developments.",
+  "key_indicators": [
+    "Clock Position at 50.7° in Quadrant I (+3.3° WoW; Growth Z +0.877, Inflation Z +1.071), crossing past 45° into late-stage Overheat.",
+    "BEA Q3 2026 Advance Real GDP at +3.4% SAAR and initial Atlanta Fed Q4 GDPNow at +3.2% SAAR, backed by 57.6 Flash PMI and 103.95 INDPRO.",
+    "Core PCE YoY breaking higher to 3.12% (3.86% MoM annualized) alongside 6.34% PPI Final Demand YoY, 3.6% Headline PCE, and 2.40% 5Y breakevens.",
+    "WTI Crude settling at $104.12/bbl and Brent at $117.64/bbl following a Strait of Hormuz tanker attack and strikes on Saudi energy facilities.",
+    "10–2 FOMC hawkish hold at 3.75%–4.00% (Cook and Hammack dissenting for a hike), lifting December 9 hike odds to 71%–78% with 10Y yields near 4.93%."
+  ],
+  "risks": [
+    "Sustained $104+ WTI / $117+ Brent crude and Strait of Hormuz disruptions eroding real consumer spending (0.0% real Sep PCE, 3.8% saving rate) and accelerating a transition into Stagflation.",
+    "Federal Reserve over-tightening into cooling private wage growth (3.1% YoY in Q3 ECI) and sluggish net hiring (+29k Sep payrolls), tipping labor hoarding into active layoffs.",
+    "Deepening AI capex retrenchment and tech equity drawdowns reversing high-income household wealth effects and private domestic investment momentum."
+  ],
+  "best_asset": "Commodities",
+  "recommended_sectors": [
+    "Energy",
+    "Industrials",
+    "Materials"
+  ],
+  "gemini_research_summary": "Deep research confirms the U.S. economy's clockwise advance to 50.7° in late-stage Overheat, propelled by Q3 real GDP accelerating to 3.4% SAAR (Q4 GDPNow at 3.2%) alongside Core PCE breaking out to 3.12% YoY (3.86% MoM annualized), 6.34% wholesale PPI, and crude oil surging to $104.12 WTI / $117.64 Brent on Strait of Hormuz hostilities. Following a 10–2 hawkish FOMC pause at 3.75%–4.00% that lifted December hike odds to 71%–78% and sparked a sharp Tech-to-Energy rotation, Commodities remain the highest-conviction asset class.",
+  "phase_probabilities": [
+    {
+      "phase": "Overheat",
+      "probability": 50
+    },
+    {
+      "phase": "Stagflation",
+      "probability": 45
+    },
+    {
+      "phase": "Recovery",
+      "probability": 5
+    }
+  ],
+  "monitoring_triggers": [
+    {
+      "indicator": "WTI / Brent Crude Oil",
+      "threshold": "> $110 WTI / > $120 Brent",
+      "meaning": "Accelerates clockwise transition into Stagflation by taxing depleted consumer savings (3.8% saving rate)"
+    },
+    {
+      "indicator": "Initial Jobless Claims",
+      "threshold": "> 225k/week",
+      "meaning": "Signals breakdown of the low-hire, low-fire labor equilibrium (currently 194k–196k) and falling Growth Z"
+    },
+    {
+      "indicator": "Real Monthly PCE Growth",
+      "threshold": "<= 0.0% for 2+ months",
+      "meaning": "Confirms inflation-driven real demand destruction after September's flat ~0.0% real spending print"
+    }
+  ],
+  "sector_rationale": [
+    {
+      "etf": "IYE (Energy)",
+      "rationale": "Direct beneficiary of $104.12 WTI / $117.64 Brent crude, geopolitical supply risk, Q3 profit beats (ExxonMobil, Chevron), and disciplined capital returns."
+    },
+    {
+      "etf": "IYJ (Industrials)",
+      "rationale": "Supported by 3.4% Q3 GDP private investment, 103.95 industrial production, 56.0 Flash Manufacturing PMI, defense restocking, and power-grid backlogs."
+    },
+    {
+      "etf": "IYM (Materials)",
+      "rationale": "Upstream pricing power passes through persistent 6.34% PPI wholesale inflation across metals, chemicals, and industrial inputs."
+    }
+  ]
+}

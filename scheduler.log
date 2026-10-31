@@ -31770,3 +31770,585 @@ ETL complete. Total items processed: 85
   news: 25
 2026-10-23 19:08:03,251 - INFO - Command completed successfully in 20.63 seconds
 2026-10-23 19:08:03,251 - INFO - All free tickers uploads + investment clock + quant trending completed successfully!
+2026-10-30 19:00:02,563 - INFO - Starting free tickers upload process for: AAPL, MSFT, NVDA
+2026-10-30 19:00:02,563 - INFO - Running job 1/10
+2026-10-30 19:00:02,563 - INFO - Starting command: poetry run python src/upload/raw_data_table_uploader.py --tickers AAPL,MSFT,NVDA --table company_facts
+
+Loading financial data for 3 tickers
+Date range: 2025-08-06 to 2026-10-30
+
+Processing company_facts for 3 tickers...
+Error saving company facts to database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:540d:f710:6e36:7f35:f468), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error saving company facts to database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:540d:f710:6e36:7f35:f468), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error saving company facts to database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:540d:f710:6e36:7f35:f468), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Completed company_facts: 0/3 succeeded
+
+Summary:
+  Total tickers processed: 3
+  company_facts - Successful: 0
+  company_facts - Failed: 3
+2026-10-30 19:00:09,562 - INFO - Command completed successfully in 7.00 seconds
+2026-10-30 19:00:09,563 - INFO - Running job 2/10
+2026-10-30 19:00:09,563 - INFO - Starting command: poetry run python src/upload/raw_data_table_uploader.py --tickers AAPL,MSFT,NVDA --table prices
+
+Loading financial data for 3 tickers
+Date range: 2025-08-06 to 2026-10-30
+
+Processing prices for 3 tickers...
+
+==============================
+UPLOAD PRICES: 3 tickers, mode: auto
+Date range: 2025-08-06 to 2026-10-30
+==============================
+
+
+--------------------------------------------------
+Processing AAPL...
+Using waterfall logic for data source selection
+STRATEGY: Date range is within 2 years, using Polygon as primary/next source
+Using Polygon for AAPL...
+API CALL: Polygon - Fetching AAPL from 2025-08-06 to 2026-10-30
+POLYGON API: Initializing request for AAPL
+POLYGON API: Date range 2025-08-06 to 2026-10-30
+POLYGON API: Using API key hzC7****Us_7
+POLYGON API: Sending request to Polygon.io API
+POLYGON API: Received 311 records for AAPL
+POLYGON API: First date: 2025-08-06, Last date: 2026-10-29
+POLYGON API: Converting data to Price objects
+POLYGON API: Created 311 Price objects
+POLYGON API: Saving data to database
+Error saving price data to database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:540d:f710:6e36:7f35:f468), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+POLYGON API: Failed to save data to database
+STRATEGY: Using Financial Datasets as fallback/next source
+Using Financial Datasets for AAPL...
+API CALL: Financial Datasets - Fetching AAPL from 2025-08-06 to 2026-10-30
+ERROR: Failed to save AAPL data from financial_datasets
+--------------------------------------------------
+
+
+--------------------------------------------------
+Processing MSFT...
+Using waterfall logic for data source selection
+STRATEGY: Date range is within 2 years, using Polygon as primary/next source
+Using Polygon for MSFT...
+API CALL: Polygon - Fetching MSFT from 2025-08-06 to 2026-10-30
+POLYGON API: Initializing request for MSFT
+POLYGON API: Date range 2025-08-06 to 2026-10-30
+POLYGON API: Using API key hzC7****Us_7
+POLYGON API: Sending request to Polygon.io API
+POLYGON API: Received 311 records for MSFT
+POLYGON API: First date: 2025-08-06, Last date: 2026-10-29
+POLYGON API: Converting data to Price objects
+POLYGON API: Created 311 Price objects
+POLYGON API: Saving data to database
+Error saving price data to database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:540d:f710:6e36:7f35:f468), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+POLYGON API: Failed to save data to database
+STRATEGY: Using Financial Datasets as fallback/next source
+Using Financial Datasets for MSFT...
+API CALL: Financial Datasets - Fetching MSFT from 2025-08-06 to 2026-10-30
+ERROR: Failed to save MSFT data from financial_datasets
+--------------------------------------------------
+
+
+--------------------------------------------------
+Processing NVDA...
+Using waterfall logic for data source selection
+STRATEGY: Date range is within 2 years, using Polygon as primary/next source
+Using Polygon for NVDA...
+API CALL: Polygon - Fetching NVDA from 2025-08-06 to 2026-10-30
+POLYGON API: Initializing request for NVDA
+POLYGON API: Date range 2025-08-06 to 2026-10-30
+POLYGON API: Using API key hzC7****Us_7
+POLYGON API: Sending request to Polygon.io API
+POLYGON API: Received 311 records for NVDA
+POLYGON API: First date: 2025-08-06, Last date: 2026-10-29
+POLYGON API: Converting data to Price objects
+POLYGON API: Created 311 Price objects
+POLYGON API: Saving data to database
+Error saving price data to database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:540d:f710:6e36:7f35:f468), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+POLYGON API: Failed to save data to database
+STRATEGY: Using Financial Datasets as fallback/next source
+Using Financial Datasets for NVDA...
+API CALL: Financial Datasets - Fetching NVDA from 2025-08-06 to 2026-10-30
+ERROR: Failed to save NVDA data from financial_datasets
+--------------------------------------------------
+
+
+==============================
+UPLOAD SUMMARY:
+Total processed: 3
+Success: 0 - None
+Failed: 3 - AAPL, MSFT, NVDA
+==============================
+
+Completed prices: 0/3 succeeded
+
+Summary:
+  Total tickers processed: 3
+  prices - Successful: 0
+  prices - Failed: 3
+2026-10-30 19:00:12,156 - INFO - Command completed successfully in 2.59 seconds
+2026-10-30 19:00:12,157 - INFO - Running job 3/10
+2026-10-30 19:00:12,157 - INFO - Starting command: poetry run python src/upload/raw_data_table_uploader.py --tickers AAPL,MSFT,NVDA --table company_news
+
+Loading financial data for 3 tickers
+Date range: 2025-08-06 to 2026-10-30
+
+Processing company_news for 3 tickers...
+Completed company_news: 0/3 succeeded
+
+Summary:
+  Total tickers processed: 3
+  company_news - Successful: 0
+  company_news - Failed: 3
+2026-10-30 19:00:14,771 - INFO - Command completed successfully in 2.61 seconds
+2026-10-30 19:00:14,771 - INFO - Running job 4/10
+2026-10-30 19:00:14,771 - INFO - Starting command: poetry run python src/upload/raw_data_table_uploader.py --tickers AAPL,MSFT,NVDA --table financial_metrics
+
+Loading financial data for 3 tickers
+Date range: 2025-08-06 to 2026-10-30
+
+Processing financial_metrics for 3 tickers...
+Error saving financial metrics to database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:540d:f710:6e36:7f35:f468), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error saving financial metrics to database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:540d:f710:6e36:7f35:f468), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error saving financial metrics to database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:540d:f710:6e36:7f35:f468), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Completed financial_metrics: 0/3 succeeded
+
+Summary:
+  Total tickers processed: 3
+  financial_metrics - Successful: 0
+  financial_metrics - Failed: 3
+2026-10-30 19:00:17,603 - INFO - Command completed successfully in 2.83 seconds
+2026-10-30 19:00:17,603 - INFO - Running job 5/10
+2026-10-30 19:00:17,603 - INFO - Starting command: poetry run python src/upload/raw_data_table_uploader.py --tickers AAPL,MSFT,NVDA --table insider_trades
+
+Loading financial data for 3 tickers
+Date range: 2025-08-06 to 2026-10-30
+
+Processing insider_trades for 3 tickers...
+Error saving insider trades: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:540d:f710:6e36:7f35:f468), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error saving insider trades: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:540d:f710:6e36:7f35:f468), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error saving insider trades: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:540d:f710:6e36:7f35:f468), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Completed insider_trades: 0/3 succeeded
+
+Summary:
+  Total tickers processed: 3
+  insider_trades - Successful: 0
+  insider_trades - Failed: 3
+2026-10-30 19:00:20,629 - INFO - Command completed successfully in 3.03 seconds
+2026-10-30 19:00:20,629 - INFO - Running job 6/10
+2026-10-30 19:00:20,630 - INFO - Starting command: poetry run python src/upload/raw_data_table_uploader.py --tickers AAPL,MSFT,NVDA --table line_items
+
+Loading financial data for 3 tickers
+Date range: 2025-08-06 to 2026-10-30
+
+Processing line_items for 3 tickers...
+Error saving line items to database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:540d:f710:6e36:7f35:f468), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error saving line items to database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:540d:f710:6e36:7f35:f468), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error saving line items to database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:540d:f710:6e36:7f35:f468), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Completed line_items: 0/3 succeeded
+
+Summary:
+  Total tickers processed: 3
+  line_items - Successful: 0
+  line_items - Failed: 3
+2026-10-30 19:00:23,343 - INFO - Command completed successfully in 2.71 seconds
+2026-10-30 19:00:23,344 - INFO - Running job 7/10
+2026-10-30 19:00:23,344 - INFO - Starting command: poetry run python src/upload/analysis_table_uploader.py --tickers AAPL,MSFT,NVDA
+
+Using analysts: Warren Buffett, Charlie Munger, Ben Graham, Cathie Wood, Stanley Druckenmiller, Fundamentals Analyst, Valuation Analyst, Sentiment Analyst, Technical Analyst
+
+Using OLLAMA model: deepseek-r1:14b
+
+Error fetching insider trades from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:540d:f710:6e36:7f35:f468), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error fetching financial metrics from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:540d:f710:6e36:7f35:f468), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error fetching financial metrics from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:540d:f710:6e36:7f35:f468), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error fetching financial metrics from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:540d:f710:6e36:7f35:f468), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error fetching financial metrics from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:540d:f710:6e36:7f35:f468), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error fetching financial metrics from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:540d:f710:6e36:7f35:f468), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error fetching financial metrics from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:540d:f710:6e36:7f35:f468), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error fetching financial metrics from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:540d:f710:6e36:7f35:f468), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error fetching company news from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:540d:f710:6e36:7f35:f468), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error fetching financial metrics from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:540d:f710:6e36:7f35:f468), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error fetching price data from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:540d:f710:6e36:7f35:f468), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error fetching financial metrics from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:540d:f710:6e36:7f35:f468), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error fetching line items from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:540d:f710:6e36:7f35:f468), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error fetching line items from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:540d:f710:6e36:7f35:f468), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+Error fetching line items from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:540d:f710:6e36:7f35:f468), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+
+Error fetching line items from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:540d:f710:6e36:7f35:f468), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+Error fetching line items from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:540d:f710:6e36:7f35:f468), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+
+Error fetching financial metrics from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:540d:f710:6e36:7f35:f468), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+Error fetching company facts from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:540d:f710:6e36:7f35:f468), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+
+Error fetching financial metrics from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:540d:f710:6e36:7f35:f468), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error fetching price data from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:540d:f710:6e36:7f35:f468), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error fetching insider trades from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:540d:f710:6e36:7f35:f468), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error fetching company facts from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:540d:f710:6e36:7f35:f468), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error fetching company facts from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:540d:f710:6e36:7f35:f468), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+Error fetching company facts from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:540d:f710:6e36:7f35:f468), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+
+Error fetching company facts from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:540d:f710:6e36:7f35:f468), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error fetching market cap from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:540d:f710:6e36:7f35:f468), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error fetching price data from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:540d:f710:6e36:7f35:f468), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error fetching company news from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:540d:f710:6e36:7f35:f468), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error fetching market cap from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:540d:f710:6e36:7f35:f468), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error fetching market cap from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:540d:f710:6e36:7f35:f468), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error fetching market cap from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:540d:f710:6e36:7f35:f468), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error fetching market cap from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:540d:f710:6e36:7f35:f468), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error fetching insider trades from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:540d:f710:6e36:7f35:f468), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error fetching insider trades from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:540d:f710:6e36:7f35:f468), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error fetching insider trades from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:540d:f710:6e36:7f35:f468), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error fetching company news from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:540d:f710:6e36:7f35:f468), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error fetching company news from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:540d:f710:6e36:7f35:f468), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error fetching company news from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:540d:f710:6e36:7f35:f468), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error fetching price data from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:540d:f710:6e36:7f35:f468), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error fetching financial metrics from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:540d:f710:6e36:7f35:f468), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error fetching line items from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:540d:f710:6e36:7f35:f468), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error fetching company facts from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:540d:f710:6e36:7f35:f468), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error fetching market cap from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:540d:f710:6e36:7f35:f468), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error fetching financial metrics from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:540d:f710:6e36:7f35:f468), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error fetching line items from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:540d:f710:6e36:7f35:f468), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error fetching company facts from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:540d:f710:6e36:7f35:f468), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error fetching market cap from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:540d:f710:6e36:7f35:f468), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error fetching financial metrics from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:540d:f710:6e36:7f35:f468), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error fetching line items from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:540d:f710:6e36:7f35:f468), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error fetching company facts from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:540d:f710:6e36:7f35:f468), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error fetching market cap from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:540d:f710:6e36:7f35:f468), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+LLM Error with Ollama deepseek-r1:14b by charlie_munger_agent: Failed to extract JSON from response: "\n\n**Signal: Neutral**\n\n**Confidence: 60%**\n\n**Reasoning:**\n- **Strengths:** Apple (AAPL) boasts a strong brand and ecosystem, which fosters customer loyalty and switching costs. Their consistent cash generation is a positive indicator of business health.\n- **Weaknesses:** The tech sector's rapid evolution poses risks to AAPL's long-term predictability. While Tim Cook has led well, past supply chain issues raise questions about management competence. Additionally, the company's diversification in"
+Error fetching financial metrics from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:540d:f710:6e36:7f35:f468), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error fetching line items from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:540d:f710:6e36:7f35:f468), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error fetching company facts from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:540d:f710:6e36:7f35:f468), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error fetching market cap from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:540d:f710:6e36:7f35:f468), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error fetching insider trades from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:540d:f710:6e36:7f35:f468), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error fetching company news from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:540d:f710:6e36:7f35:f468), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error fetching price data from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:540d:f710:6e36:7f35:f468), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error fetching financial metrics from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:5411:3c2:c35b:37f2:8af), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error fetching line items from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:5411:3c2:c35b:37f2:8af), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error fetching company facts from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:5411:3c2:c35b:37f2:8af), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error fetching market cap from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:5411:3c2:c35b:37f2:8af), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error fetching financial metrics from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:5411:3c2:c35b:37f2:8af), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error fetching line items from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:5411:3c2:c35b:37f2:8af), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error fetching company facts from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:5411:3c2:c35b:37f2:8af), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error fetching market cap from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:5411:3c2:c35b:37f2:8af), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error fetching financial metrics from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:5411:3c2:c35b:37f2:8af), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error fetching line items from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:5411:3c2:c35b:37f2:8af), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error fetching company facts from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:5411:3c2:c35b:37f2:8af), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error fetching market cap from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:5411:3c2:c35b:37f2:8af), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+LLM Error with Ollama deepseek-r1:14b by charlie_munger_agent: Failed to extract JSON from response: "\n\n**Signal: Neutral**\n\n**Confidence: 60%**\n\n**Reasoning:**\n- **Strengths:** Apple (AAPL) boasts a strong brand and ecosystem, which fosters customer loyalty and switching costs. Their consistent cash generation is a positive indicator of business health.\n- **Weaknesses:** The tech industry's rapid evolution poses risks to AAPL's long-term predictability. While their management has shown competence in areas like sustainability, past supply chain issues raise concerns. Additionally, the company op"
+Error fetching financial metrics from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:5411:3c2:c35b:37f2:8af), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error fetching line items from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:5411:3c2:c35b:37f2:8af), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error fetching company facts from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:5411:3c2:c35b:37f2:8af), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error fetching market cap from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:5411:3c2:c35b:37f2:8af), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error fetching insider trades from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:5411:3c2:c35b:37f2:8af), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error fetching company news from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:5411:3c2:c35b:37f2:8af), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error fetching price data from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:5411:3c2:c35b:37f2:8af), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+LLM Error with Ollama deepseek-r1:14b by charlie_munger_agent: Failed to extract JSON from response: "\n\n**Signal: Neutral**\n\n**Confidence: 60%**\n\n**Reasoning:**\n- **Strengths:** Apple (AAPL) boasts a strong brand and ecosystem, which fosters customer loyalty and switching costs. Their consistent cash generation is a positive indicator of business health.\n- **Weaknesses:** The tech industry's rapid evolution poses risks to AAPL's long-term predictability. While their management has shown competence in areas like sustainability, past supply chain issues raise concerns. Additionally, the company op"
+Error in LLM call after 3 attempts: Failed to extract JSON from response: "\n\n**Signal: Neutral**\n\n**Confidence: 60%**\n\n**Reasoning:**\n- **Strengths:** Apple (AAPL) boasts a strong brand and ecosystem, which fosters customer loyalty and switching costs. Their consistent cash generation is a positive indicator of business health.\n- **Weaknesses:** The tech industry's rapid evolution poses risks to AAPL's long-term predictability. While their management has shown competence in areas like sustainability, past supply chain issues raise concerns. Additionally, the company op"
+Error fetching financial metrics from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:5411:3c2:c35b:37f2:8af), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error fetching line items from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:5411:3c2:c35b:37f2:8af), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error fetching company facts from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:5411:3c2:c35b:37f2:8af), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error fetching market cap from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:5411:3c2:c35b:37f2:8af), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error fetching insider trades from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:5411:3c2:c35b:37f2:8af), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error fetching company news from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:5411:3c2:c35b:37f2:8af), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+LLM Error with Ollama deepseek-r1:14b by charlie_munger_agent: Failed to extract JSON from response: "\n\n**Signal: Neutral**\n\n**Confidence: 50%**\n\n**Reasoning:**\n- **Insufficient Data:** The analysis lacks key metrics such as five years of financial data for predictability, specific ROIC figures, and details on management integrity. This makes it difficult to assess the company's stability and profitability trends.\n- **Potential Moats:** Microsoft has significant positions in cloud computing (Azure) and productivity tools (Office), which could indicate strong competitive advantages. However, with"
+LLM Error with Ollama deepseek-r1:14b by charlie_munger_agent: Failed to extract JSON from response: "\n\n**Signal: Neutral**\n\n**Confidence: 60%**\n\n**Reasoning:**\n- **Quality and Predictability:** Microsoft has a long history, suggesting steady operations, but without five years of data, predictability is uncertain.\n- **Mental Models:** Applying microeconomics, Microsoft's dominance in certain areas like Windows indicates potential monopolistic advantages, though cloud competition is intense.\n- **Moat Analysis:** Azure's growth is significant, but Amazon's AWS still dominates, questioning the stre"
+LLM Error with Ollama deepseek-r1:14b by charlie_munger_agent: Failed to extract JSON from response: "\n\n**Signal: Neutral**\n\n**Confidence: 60%**\n\n**Reasoning:**\n- **Quality and Predictability:** Microsoft has a long history, suggesting steady operations, but without five years of data, predictability is uncertain.\n- **Mental Models:** Applying microeconomics, Microsoft's dominance in certain areas like Windows indicates potential monopolistic advantages, though cloud competition is intense.\n- **Moat Analysis:** Azure's growth is significant, but Amazon's AWS still dominates, questioning the stre"
+Error in LLM call after 3 attempts: Failed to extract JSON from response: "\n\n**Signal: Neutral**\n\n**Confidence: 60%**\n\n**Reasoning:**\n- **Quality and Predictability:** Microsoft has a long history, suggesting steady operations, but without five years of data, predictability is uncertain.\n- **Mental Models:** Applying microeconomics, Microsoft's dominance in certain areas like Windows indicates potential monopolistic advantages, though cloud competition is intense.\n- **Moat Analysis:** Azure's growth is significant, but Amazon's AWS still dominates, questioning the stre"
+Error fetching financial metrics from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:5424:65cf:9630:9f4d:2a8e), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error fetching line items from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:5424:65cf:9630:9f4d:2a8e), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error fetching company facts from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:5424:65cf:9630:9f4d:2a8e), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error fetching market cap from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:5424:65cf:9630:9f4d:2a8e), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error fetching insider trades from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:5424:65cf:9630:9f4d:2a8e), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+Error fetching company news from database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:5424:65cf:9630:9f4d:2a8e), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+LLM Error with Ollama deepseek-r1:14b by charlie_munger_agent: Failed to extract JSON from response: '\n\n**Signal: Neutral**\n\n**Confidence: 60%**\n\n**Reasoning:**\n- **Moat Analysis:** NVIDIA has a strong position in GPUs, particularly in gaming and AI, which provides a competitive edge. However, the semiconductor industry is highly competitive and subject to rapid technological changes, which could potentially erode their moat.\n  \n- **Predictability:** The business operates in a cyclical industry with volatile demand, making it less predictable over the long term. Without sufficient historical dat'
+LLM Error with Ollama deepseek-r1:14b by charlie_munger_agent: Failed to extract JSON from response: '\n\n**Signal:** Bearish  \n**Confidence:** 60  \n\n**Reasoning:**  \nNVDA operates in the highly cyclical semiconductor industry, which is subject to rapid technological changes and market fluctuations. While they currently hold a strong position in GPUs and AI, factors such as increased competition from AMD, potential shifts in consumer demand, and geopolitical risks pose significant threats. Additionally, high valuations and the complexity of the semiconductor business make it challenging to justify'
+LLM Error with Ollama deepseek-r1:14b by charlie_munger_agent: Failed to extract JSON from response: '\n\n**Signal:** Bearish  \n**Confidence:** 60  \n\n**Reasoning:**  \nNVDA operates in the highly cyclical semiconductor industry, which is subject to rapid technological changes and market fluctuations. While they currently hold a strong position in GPUs and AI, factors such as increased competition from AMD, potential shifts in consumer demand, and geopolitical risks pose significant threats. Additionally, high valuations and the complexity of the semiconductor business make it challenging to justify'
+Error in LLM call after 3 attempts: Failed to extract JSON from response: '\n\n**Signal:** Bearish  \n**Confidence:** 60  \n\n**Reasoning:**  \nNVDA operates in the highly cyclical semiconductor industry, which is subject to rapid technological changes and market fluctuations. While they currently hold a strong position in GPUs and AI, factors such as increased competition from AMD, potential shifts in consumer demand, and geopolitical risks pose significant threats. Additionally, high valuations and the complexity of the semiconductor business make it challenging to justify'
+
+All analyst signals:
+{
+  "valuation_agent": {},
+  "fundamentals_agent": {},
+  "technical_analyst_agent": {},
+  "sentiment_agent": {
+    "AAPL": {
+      "signal": "neutral",
+      "confidence": 0,
+      "detail": {
+        "insider_total": 0,
+        "insider_bullish": 0,
+        "insider_bearish": 0,
+        "insider_value_total": 0.0,
+        "insider_value_bullish": 0.0,
+        "insider_value_bearish": 0.0,
+        "insider_weight": 0.3,
+        "news_total": 0,
+        "news_bullish": 0,
+        "news_bearish": 0,
+        "news_neutral": 0,
+        "news_weight": 0.7,
+        "weighted_bullish": 0.0,
+        "weighted_bearish": 0.0,
+        "biz_date": "2026-10-30"
+      }
+    },
+    "MSFT": {
+      "signal": "neutral",
+      "confidence": 0,
+      "detail": {
+        "insider_total": 0,
+        "insider_bullish": 0,
+        "insider_bearish": 0,
+        "insider_value_total": 0.0,
+        "insider_value_bullish": 0.0,
+        "insider_value_bearish": 0.0,
+        "insider_weight": 0.3,
+        "news_total": 0,
+        "news_bullish": 0,
+        "news_bearish": 0,
+        "news_neutral": 0,
+        "news_weight": 0.7,
+        "weighted_bullish": 0.0,
+        "weighted_bearish": 0.0,
+        "biz_date": "2026-10-30"
+      }
+    },
+    "NVDA": {
+      "signal": "neutral",
+      "confidence": 0,
+      "detail": {
+        "insider_total": 0,
+        "insider_bullish": 0,
+        "insider_bearish": 0,
+        "insider_value_total": 0.0,
+        "insider_value_bullish": 0.0,
+        "insider_value_bearish": 0.0,
+        "insider_weight": 0.3,
+        "news_total": 0,
+        "news_bullish": 0,
+        "news_bearish": 0,
+        "news_neutral": 0,
+        "news_weight": 0.7,
+        "weighted_bullish": 0.0,
+        "weighted_bearish": 0.0,
+        "biz_date": "2026-10-30"
+      }
+    }
+  },
+  "cathie_wood_agent": {
+    "AAPL": {
+      "signal": "neutral",
+      "confidence": 60.0,
+      "reasoning": "While Apple Inc. (AAPL) demonstrates significant strengths such as substantial R&D investment, a large Total Addressable Market (TAM), and leadership in multiple tech sectors, the analysis indicates insufficient data to conclusively identify disruptive innovation or exponential growth potential. AAPL's continuous product innovations and market expansion are notable, but without clear evidence of transformative breakthroughs, the risk-reward balance leans towards a neutral stance."
+    },
+    "MSFT": {
+      "signal": "bullish",
+      "confidence": 75.0,
+      "reasoning": "Microsoft leverages disruptive technologies in cloud computing and AI, with Azure showing exponential growth in a large TAM. Strong R&D investments under Satya Nadella's leadership support future innovation. Moderate confidence due to competitive landscape and regulatory risks."
+    },
+    "NVDA": {
+      "signal": "bullish",
+      "confidence": 85.0,
+      "reasoning": "NVIDIA (NVDA) is at the forefront of the AI revolution, leveraging GPUs to drive advancements in machine learning and data centers. Their strong R&D investments position them to maintain leadership in this rapidly growing sector. With a large Total Addressable Market across industries like healthcare, finance, and autonomous vehicles, NVDA has exponential growth potential. Despite short-term volatility risks, their innovation pipeline and market dominance suggest significant long-term rewards."
+    }
+  },
+  "warren_buffett_agent": {
+    "AAPL": {
+      "signal": "bearish",
+      "confidence": 30.0,
+      "reasoning": "While Apple has a strong economic moat and quality management, the lack of sufficient fundamental data, particularly intrinsic value and margin of safety, makes it difficult to confidently assess. This uncertainty, combined with potential risks in the volatile tech sector, leads to a bearish signal with low confidence."
+    },
+    "MSFT": {
+      "signal": "bearish",
+      "confidence": 50.0,
+      "reasoning": "While Microsoft has a strong position in technology and cloud services, the lack of sufficient fundamental and valuation data makes it difficult to confidently assess its intrinsic value and margin of safety. This uncertainty, combined with insufficient historical performance metrics, leads to a bearish signal."
+    },
+    "NVDA": {
+      "signal": "neutral",
+      "confidence": 25.0,
+      "reasoning": "Insufficient data across all key metrics makes it difficult to apply Buffett's principles confidently. Without information on economic moat, management quality, financial strength, and intrinsic value, a neutral stance with low confidence is appropriate."
+    }
+  },
+  "ben_graham_agent": {
+    "AAPL": {
+      "signal": "neutral",
+      "confidence": 50.0,
+      "reasoning": "Insufficient data prevents a definitive analysis based on Benjamin Graham's criteria. Without specific metrics like the Graham Number, NCAV, current ratio, debt levels, earnings stability, or dividend history, it is not possible to determine if AAPL offers a margin of safety or meets financial strength thresholds. A neutral stance is recommended until more comprehensive data is available."
+    },
+    "MSFT": {
+      "signal": "neutral",
+      "confidence": 60.0,
+      "reasoning": "While Microsoft is a large, established company with a history of steady growth and dividends, the analysis lacks sufficient data to apply Graham's specific thresholds. This makes it difficult to confidently recommend based on his principles. A neutral stance is taken pending further information."
+    },
+    "NVDA": {
+      "signal": "neutral",
+      "confidence": 50.0,
+      "reasoning": "Insufficient data is available for key valuation metrics such as the Graham Number or Net Current Asset Value (NCAV), making it difficult to assess the margin of safety. Additionally, there is no information on financial strength indicators like debt levels or current ratio, and earnings stability over multiple years cannot be evaluated due to insufficient data. While NVDA's growth prospects are notable, the lack of concrete financial metrics prevents a definitive recommendation."
+    }
+  },
+  "stanley_druckenmiller_agent": {
+    "AAPL": {
+      "signal": "neutral",
+      "confidence": 50.0,
+      "reasoning": "The analysis indicates insufficient data across key metrics such as growth momentum, risk-reward profile, and valuation. Sentiment and insider activity are neutral, providing no clear direction. Without sufficient information to assess AAPL's potential upside or downside, a neutral stance is appropriate at this time."
+    },
+    "MSFT": {
+      "signal": "bearish",
+      "confidence": 12.0,
+      "reasoning": "The analysis for MSFT indicates a bearish signal with extremely low confidence due to insufficient data across all key metrics. Growth momentum, sentiment, insider activity, risk-reward, and valuation analyses are all lacking sufficient information to make a confident assessment. The current absence of positive indicators and the model's conservative approach lead to this cautious stance."
+    },
+    "NVDA": {
+      "signal": "neutral",
+      "confidence": 50.0,
+      "reasoning": "The analysis for NVDA currently lacks sufficient data across key areas such as growth momentum, sentiment, insider activity, risk-reward profile, and valuation metrics. Without concrete information on revenue growth, earnings trends, stock momentum, or management confidence (insider trades), it is challenging to assess the investment potential. Sentiment is neutral due to the absence of news data, and there are no indicators from insider activity. Given the current data paucity, a neutral stance is advisable until more information becomes available."
+    }
+  },
+  "charlie_munger_agent": {
+    "AAPL": {
+      "signal": "neutral",
+      "confidence": 0.0,
+      "reasoning": "Error in analysis, defaulting to neutral"
+    },
+    "MSFT": {
+      "signal": "neutral",
+      "confidence": 0.0,
+      "reasoning": "Error in analysis, defaulting to neutral"
+    },
+    "NVDA": {
+      "signal": "neutral",
+      "confidence": 0.0,
+      "reasoning": "Error in analysis, defaulting to neutral"
+    }
+  }
+}
+Error connecting to database: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:5411:3c2:c35b:37f2:8af), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+ [OK] Ben Graham          [NVDA] Done                                          
+ [OK] Cathie Wood         [NVDA] Done                                          
+ [OK] Charlie Munger      [NVDA] Done                                          
+ [..] Fundamentals        [NVDA] Failed: No financial metrics found            
+ [OK] Sentiment           [NVDA] Done                                          
+ [OK] Stanley Druckenmiller[NVDA] Done                                         
+ [..] Technical Analyst   [NVDA] Failed: No price data found                   
+ [..] Valuation           [NVDA] Failed: No financial metrics found            
+ [OK] Warren Buffett      [NVDA] Done                                          Traceback (most recent call last):
+  File "F:\workspace\sophie-pipeline\src\upload\analysis_table_uploader.py", line 219, in <module>
+    result = run_hedge_fund(
+             ^^^^^^^^^^^^^^^
+  File "F:\workspace\sophie-pipeline\src\upload\analysis_table_uploader.py", line 121, in run_hedge_fund
+    upload_func(agent_data)
+  File "F:\workspace\sophie-pipeline\src\tools\db_upload.py", line 760, in upload_valuation_result
+    conn = get_db_connection()
+           ^^^^^^^^^^^^^^^^^^^
+  File "F:\workspace\sophie-pipeline\src\tools\db_upload.py", line 1264, in get_db_connection
+    return psycopg2.connect(db_url)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lswht\AppData\Local\pypoetry\Cache\virtualenvs\sophie-etl-n_cDZFVB-py3.12\Lib\site-packages\psycopg2\__init__.py", line 122, in connect
+    conn = _connect(dsn, connection_factory=connection_factory, **kwasync)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+psycopg2.OperationalError: connection to server at "ep-billowing-wildflower-a4222ksm-pooler.us-east-1.aws.neon.tech" (2600:1f18:240c:5411:3c2:c35b:37f2:8af), port 5432 failed: ERROR:  Your account or project has exceeded the quota. Upgrade your plan to increase limits.
+
+2026-10-30 19:07:16,939 - ERROR - Command failed with error: Command '['poetry', 'run', 'python', 'src/upload/analysis_table_uploader.py', '--tickers', 'AAPL,MSFT,NVDA']' returned non-zero exit status 1.
