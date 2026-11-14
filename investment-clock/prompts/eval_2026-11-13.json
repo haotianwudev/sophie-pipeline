@@ -1,0 +1,71 @@
+{
+  "final_phase": "Overheat",
+  "phase_confidence": 91,
+  "phase_direction": "clockwise",
+  "reasoning": "As of November 13, 2026, the U.S. economy remains firmly entrenched in the Overheat phase of the Merrill Lynch Investment Clock, with the cycle hand advancing +0.5° clockwise from 50.7° to 51.2° in Quadrant I (Composite Growth Z-score at +0.818 and Composite Inflation Z-score at +1.017). This week's marquee October inflation releases decisively confirmed that broad price pressures remain deeply embedded well above the Federal Reserve's 2.0% target even as spot crude oil moderated: Tuesday's October CPI report showed headline inflation rising +0.4% MoM and Core CPI rising +0.3% MoM for a third consecutive month (bringing the FRED Core CPI reference to 2.87% YoY and 3.61% 1-month annualized, alongside Core PCE at 3.12% YoY / 3.86% MoM annualized), while Friday's October PPI report revealed that wholesale PPI Final Demand YoY surged from 6.34% to 6.52% (+0.3% MoM headline, +0.5% MoM Final Demand Goods, and 4.9% YoY Core PPI)—marking the largest 12-month wholesale inflation increase since November 2022. Corroborating this upstream pipeline pressure, the October NFIB Small Business survey showed a net 37% of owners planning to raise selling prices, the highest reading since July 2022. Even with WTI crude edging down to $88.56–$88.74/bbl (Brent at $95.82–$95.84/bbl) on IEA global surplus estimates—which nudged 5-year TIPS breakevens down 3 bps from 2.33% to 2.30%—the jump in PPI Final Demand kept the Composite Inflation Z-score anchored above +1.00 SD (+1.017).\n\nOn the growth axis, real economic activity continues to expand well above long-run potential. On November 9, the Atlanta Fed's Q4 2026 GDPNow model climbed from 3.4% to 3.5% SAAR following strong wholesale trade data and October's blowout employment report (+165k payrolls plus +84k upward revisions), putting the U.S. economy on track for back-to-back quarters of 3.4%–3.5% real GDP growth. Thursday's DOL weekly claims report showed initial jobless claims at 200,000 for the week ended November 7 (keeping the 4-week moving average unchanged at an ultra-tight 195,250) while continuing claims fell by 20,000 to 1,697,000. Coincident and survey indicators remain equally supportive: the Unemployment Rate sits at 4.1%, OECD CLI holds at 101.00, Industrial Production stands at 103.95 (backed by 59.0% ISM Manufacturing Production), the NFIB Uncertainty Index plunged 6 points to 84 post-election, and Friday's preliminary November University of Michigan Consumer Sentiment rebounded +6.3% to 51.0 as lower gasoline prices buoyed middle-income households.\n\nMonetary policy and cross-asset dynamics during the week of November 9–13 provided textbook validation of an active Overheat regime (91% confidence). Following Tuesday's CPI print, Fed Governor Christopher Waller warned in London that recent inflation data was 'bad' with 'no silver lining,' expressing support for at least a 25 bps rate hike in December and explicitly floating a potential 50 bps hike debate, while Vice Chair Michelle Bowman reiterated that further work is required to restore 2% inflation. Despite public caution from Treasury Secretary Scott Bessent against over-tightening into an energy shock, CME FedWatch probabilities for a 25 bps rate hike (to 4.00%–4.25%) at the December 8–9 FOMC meeting jumped from 76%–77% to 89%–93%. Bond yields surged across the curve: the 2-year Treasury yield climbed ~35 bps to 4.86%–4.87%, and the 10-year Treasury yield soared ~29–30 bps past the psychological 5.00% threshold to close at 5.10%–5.15%—its biggest weekly jump since early 2025. While the S&P 500 gained ~2.5% on the week to 7,561.67 and the Dow reached 52,347.55, long-duration technology stocks lagged under the combined weight of >5.10% 10-year yields and Nvidia's sudden CEO transition (Jensen Huang stepping down, with CFO Colette Kress named interim CEO ahead of November 17 earnings), reinforcing our overweight in Commodities and real-economy cyclicals.",
+  "outlook": "Over the next 3 to 6 months (November 2026 through May 2027), our primary baseline (52% probability) expects the U.S. economy to remain in the Overheat phase. Backed by 3.5% Q4 GDPNow tracking, 59.0% ISM Manufacturing Production, +3.6% Q3 productivity growth, 200k initial jobless claims (1.697M continuing claims), and pump relief from ~$89/bbl WTI crude lifting consumer sentiment to 51.0, real U.S. output has substantial momentum to stay above trend through Q4 2026 and early 2027, while 6.52% YoY PPI, 4.9% Core PPI, 3.12% Core PCE, and 37% NFIB small-business price plans keep inflation well above target as the FOMC hikes to 4.00%–4.25% on December 9. However, the probability of a clockwise transition past 90° into Stagflation has risen to 40% (up from 35% last week): the rapid breakout in the 10-year Treasury yield to 5.10%–5.15% and 2-year yield to 4.86%–4.87% tightens financial conditions materially, and could combine with post-Huang AI/tech capex caution or unilateral executive tariffs / Strait of Hormuz disruptions to cool growth below trend in H1 2027. An 8% tail scenario envisions a counter-clockwise return to Recovery if a comprehensive U.S.–Iran maritime accord and sustained 3.5%+ productivity gains rapidly compress core inflation toward 2.2%–2.4%.",
+  "key_indicators": [
+    "Clock Position advancing +0.5° clockwise to 51.2° in Quadrant I (Growth Z +0.818, Inflation Z +1.017), confirming high-conviction Overheat.",
+    "October PPI Final Demand surging to 6.52% YoY (highest since Nov 2022; Goods +0.5% MoM, Core PPI 4.9% YoY) alongside October CPI at +0.4% MoM headline / +0.3% MoM Core (2.87% YoY reference).",
+    "Atlanta Fed Q4 2026 GDPNow rising to 3.5% SAAR (following Q3's 3.4% GDP), with Initial Jobless Claims at 200k (4-week avg flat at 195.25k) and Continuing Claims down 20k to 1.697M.",
+    "CME FedWatch pricing an 89%–93% probability of a 25 bps Fed rate hike (to 4.00%–4.25%) on December 8–9 after hawkish Waller/Bowman speeches, driving 2Y yields to 4.86%–4.87% and 10Y yields up ~29 bps to 5.10%–5.15%.",
+    "NFIB net small businesses planning price hikes jumping to 37% (highest since July 2022) and Prelim Nov UMich Consumer Sentiment rising +6.3% to 51.0 as WTI crude settled at $88.56–$88.74/bbl."
+  ],
+  "risks": [
+    "Breakout in the 10-year Treasury yield above 5.10%–5.15% and potential aggressive Fed tightening (Waller floating a 50 bps debate) choking off rate-sensitive housing and capex.",
+    "Nvidia CEO transition (Jensen Huang resignation ahead of Nov 17 earnings) and >5.10% discount rates sparking a broader AI capex unwind and negative equity wealth effect.",
+    "Ongoing 9-month Strait of Hormuz tanker/mine disruptions or unilateral post-midterm executive tariffs triggering a secondary supply-side inflation shock."
+  ],
+  "best_asset": "Commodities",
+  "recommended_sectors": [
+    "Energy",
+    "Industrials",
+    "Materials"
+  ],
+  "gemini_research_summary": "Deep research confirms the U.S. economy's high-conviction (91%) Overheat position at 51.2° (+0.5° clockwise) as October CPI (+0.4% MoM headline, +0.3% core) and October PPI Final Demand (surging to a 4-year high of 6.52% YoY, with 37% of NFIB small businesses planning price hikes) prove inflation remains entrenched despite WTI crude easing to ~$88.65/bbl. With Q4 GDPNow rising to 3.5% SAAR, initial claims at 200k, December Fed rate-hike odds jumping to 89%–93%, the 10-year Treasury yield breaking past 5.00% to 5.10%–5.15%, and mega-cap tech facing Nvidia's sudden CEO transition, Commodities and cyclical real assets (Energy, Industrials, Materials) remain strongly favored.",
+  "phase_probabilities": [
+    {
+      "phase": "Overheat",
+      "probability": 52
+    },
+    {
+      "phase": "Stagflation",
+      "probability": 40
+    },
+    {
+      "phase": "Recovery",
+      "probability": 8
+    }
+  ],
+  "monitoring_triggers": [
+    {
+      "indicator": "10-Year U.S. Treasury Yield",
+      "threshold": "> 5.25% – 5.35%",
+      "meaning": "Accelerates financial-conditions tightening after this week's breakout to 5.10%–5.15%, pulling Growth Z clockwise toward Stagflation"
+    },
+    {
+      "indicator": "Nvidia Q3 Earnings (Nov 17) & Hyperscaler Capex",
+      "threshold": "Guidance miss or capex slowdown following CEO transition",
+      "meaning": "Triggers broader equity de-risking and weighs on high-income consumption and business equipment investment"
+    },
+    {
+      "indicator": "Initial Jobless Claims",
+      "threshold": "> 225k/week",
+      "meaning": "Signals a break from the current 195k–200k tight labor regime and confirms slowing real growth momentum"
+    }
+  ],
+  "sector_rationale": [
+    {
+      "etf": "IYE (Energy)",
+      "rationale": "Generates double-digit free-cash-flow yields at ~$89 WTI / ~$96 Brent with low duration sensitivity to 5.10%+ 10Y Treasury yields and convex upside to ongoing Strait of Hormuz disruptions."
+    },
+    {
+      "etf": "IYJ (Industrials)",
+      "rationale": "Direct beneficiary of 3.5% Q4 GDPNow growth, 59.0% ISM Manufacturing Production, and wholesale restocking without mega-cap tech governance or valuation compression risk."
+    },
+    {
+      "etf": "IYM (Materials)",
+      "rationale": "Captures upstream pricing power as October PPI Final Demand hit a 4-year high of 6.52% YoY (+0.5% MoM Core Goods) alongside 75.2% ISM Manufacturing Prices Paid."
+    }
+  ]
+}
